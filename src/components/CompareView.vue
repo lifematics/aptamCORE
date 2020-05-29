@@ -6,7 +6,6 @@
         <div class="header-control container">
             <div class="row">
                 <div class="col-sm-4">Number of Sequences: <input type="text" v-model="compareNumber" v-on:change="changeNumberOfCompare" /></div>
-                <div class="col-sm-4"><label><input type="checkbox" v-model="checkFamilyMembers_This" v-on:change="changeCheckFamiliMembersProp" />Check Family Members</label></div>
                 <div class="col-sm-4">
                     <div class="page-control">
                         <button :disabled="page.current <= 1" v-on:click="prevPage">Prev</button>
@@ -16,6 +15,27 @@
                 </div>
                 <div class="col-sm-4"><button v-on:click="exportAsCsv" value="Export">Export</button></div>
             </div>
+            <div class="filter" id="filterdiv">
+                <div class="row">
+                    <div class="col-sm-9 keyword">
+                        <span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground" v-model="conditions.key" placeholder='Search Key'/>
+                        <label><input type="checkbox" v-on:change="colorFilterBackground" v-model="conditions.primary_only" />Primary Only</label>
+                    </div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                </div>
+                <div class="col-sm-4"><button v-on:click="filterGraphs" value="Export">Filter</button></div>
+            </div>
+            <div class="row" id="compare_target_div" style="margin-top:5px">
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-on:change="changeCompareTargetProp" v-model="compareTarget_This" value="cluster_representative" checked> <label for="cluster_representative">Cluster Representatives</label> 
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_cluster_all" v-on:change="changeCompareTargetProp"  v-model="compareTarget_This" value="cluster_all"> <label for="radio_cluster_all">Cluster Members</label> 
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_sequences" v-on:change="changeCompareTargetProp"  v-model="compareTarget_This" value="sequences"> <label for="radio_sequences">Sequences</label> 
+            </div> 
         </div>
         <div class="graph-pane" v-for="(graph, index) in chartData" :key="index" :id="graph.id" style="float: left">
             <button class="copy-button" v-on:click="copySequence" :name="index">Copy Sequence</button>
@@ -37,9 +57,12 @@ export default {
     props: {
         preferences: Object,
         numberOfCompare: Number,
-        checkFamilyMembers: Boolean,
+        compareTarget: String,
         target: Number,
+        totalCount: Number,
         page: Object,
+        conditions: Object,
+        threshold: Object,
         graphWidth: Number,
         graphHeight: Number,
         dataSets: Array,
@@ -48,7 +71,7 @@ export default {
     data() {
         return {
             compareNumber: this.numberOfCompare,
-            checkFamilyMembers_This:this.checkFamilyMembers,//親の変数にバインドすると値の更新のタイミングが分からなかったので別変数を作った。。。
+            compareTarget_This:this.compareTarget,//親の変数にバインドすると値の更新のタイミングが分からなかったので別変数を作った。。。
             chartData: [],
             options: [],
         }
@@ -76,12 +99,30 @@ export default {
                 this.loadCompareData();
             }
         },
-        changeCheckFamiliMembersProp: function() {
-            this.$emit('checkFamilyMembersCompare', this.checkFamilyMembers_This);
+        colorFilterBackground: function() {
+            let ddiv = document.getElementById("filterdiv");
+            ddiv.style["background-color"] = "#ffaaaa";
+        },
+        filterGraphs: function() {
+            let ddiv = document.getElementById("filterdiv");
+            ddiv.style["background-color"] = "#ffffff";
+            if (this.numberOfCompare > 0) {
+                this.$emit('updateCompareData');
+            }
+        },
+        changeCompareTargetProp: function() {
+            this.$emit('setCompareTargetApp', this.compareTarget_This);
             this.loadCompareData();
         },
         exportAsCsv: function() {
-            ipcRenderer.send('export-compare-data', [this.target, this.numberOfCompare, this.page.current,this.checkFamilyMembers]);
+            this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
+            ipcRenderer.send('export-compare-data', {
+                "dataset_id": this.target,
+                "number_of_compare": this.numberOfCompare,
+                "page": this.page.current,
+                "compare_target": this.compareTarget,
+                "filter_settings": {"conditions":this.conditions,"threshold":this.threshold}
+            });   
         },
         copySequence: function(event) {
             let index = event.target.name;
@@ -205,8 +246,29 @@ a {
     float: left;
 }
 
-
 .copy-button {
     float: right;
+}
+
+div.filter {
+    padding:3px;
+}
+
+.filter .keyword input[type="text"] {
+    width: 480px;
+}
+.filter .keyword input[type="number"] {
+    width: 100px;
+}
+.filter .keyword input[type="checkbox"] {
+    margin-left: 10px;
+}
+
+.filter span.label {
+    display: inline-block;
+    width: 60px;
+}
+.filter .ratio input {
+    width: 60px;
 }
 </style>

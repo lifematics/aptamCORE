@@ -17,7 +17,7 @@ let defaultPreferences = {
             "count",
             "ratio",
         ],
-        "list_size": 1000,
+        "list_size": 100,
     },
     "color": {
         "primers": ['on'],
@@ -64,8 +64,6 @@ let preferences_hs = {
             }
         });
 
-        console.log(preferences);
-
         return preferences;
     },
 
@@ -98,6 +96,10 @@ let preferences_hs = {
                                     {'label': 'Total Length', 'value': 'total_length'},
                                     {'label': 'Count', 'value': 'count'},
                                     {'label': 'Ratio', 'value': 'ratio'},
+                                    {'label': 'A Ratio', 'value': 'a_ratio'},
+                                    {'label': 'C Ratio', 'value': 'c_ratio'},
+                                    {'label': 'G Ratio', 'value': 'g_ratio'},
+                                    {'label': 'T Ratio', 'value': 't_ratio'},
                                 ],
                             },
                         ],
@@ -106,7 +108,7 @@ let preferences_hs = {
                         'label': 'List Settings',
                         'fields': [
                             {
-                                'label': 'Number of List Items',
+                                'label': 'Number of List Sequences',
                                 'key': 'list_size',
                                 'type': 'text',
                             },

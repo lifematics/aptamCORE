@@ -93,7 +93,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    // window.webContents.openDevTools()
+    window.webContents.openDevTools()
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -121,9 +121,6 @@ app.on('ready', () => {
         //writeFileSync なので問題ないはず
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
-    
-    //デバッグ中
-    console.log(statisticData.get());
     analysis.setStatisticDataRecorder(statisticData);
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
@@ -133,7 +130,7 @@ app.on('ready', () => {
         let searchConditions = args[1];
         let listSize = args[2];
         let page = args[3];
-        let threshold = args[4]
+        let threshold = args[4];
         analysis.getClusters(dataSetId, searchConditions, listSize, page, threshold, (result) => {
             window.webContents.send('clusterListChanged', result);
         });
@@ -173,8 +170,6 @@ app.on('ready', () => {
             });
         });
     });
-    
-    
     ipcMain.on('analyze', (event, args) => {
         if(fastqList.length == 0){
             return;
@@ -224,8 +219,7 @@ app.on('ready', () => {
                 });
             });
         };
-
-        //全 FASTQ に含まれる配列数をカウントする
+        //全 FASTQ (forward のみ)に含まれる配列数をカウントする
         let flist=[kfunc];
         for(let kk = 1;kk < fastqList.length;kk++){
             if(fastqList[kk]["file1"].length > 0){
@@ -250,21 +244,23 @@ app.on('ready', () => {
         });
     });
     ipcMain.on('load-compare-data', (event, args) => {
-        let dataSetId = args[0];
-        let numberOfCompare = args[1];
-        let page = args[2];
-        let check_family_members = args[3];
-        analysis.getDataSetClusterCount(dataSetId, null,null , function(count) {//ページ数表示とかのために数を数えるだけ
-            analysis.getCompareData(dataSetId, numberOfCompare, page, check_family_members,function(dataSets, data) {
+        let dataSetId = args["dataset_id"];
+        let numberOfCompare = args["number_of_compare"];
+        let page = args["page"];
+        let compareTarget = args["compare_target"];
+        let filterSettings = args["filter_settings"];
+        analysis.getDataSetClusterCount(dataSetId, filterSettings["conditions"],filterSettings["threshold"] , function(count) {
+            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                 window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: count, page: page, size: numberOfCompare });
             });
         })
     });
     ipcMain.on('export-compare-data', (event, args) => {
-        let dataSetId = args[0];
-        let numberOfCompare = args[1];
-        let page = args[2];
-        let check_family_members = args[3];
+        let dataSetId = args["dataset_id"];
+        let numberOfCompare = args["number_of_compare"];
+        let page = args["page"];
+        let compareTarget = args["compare_target"];
+        let filterSettings = args["filter_settings"];
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
             title: 'Specify a output file',
@@ -274,9 +270,11 @@ app.on('ready', () => {
             ]
         }).then(function(result) {
             let filename = result.filePath;
-            analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, check_family_members, function () {
-                window.webContents.send('finish-export');
-            });
+            if (filename) {
+                analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget,filterSettings, function () {
+                    window.webContents.send('finish-export');
+                });
+            }
         })
     });
     ipcMain.on('get-venn-data', (event, args) => {

@@ -773,7 +773,7 @@ class Analysis {
             if(!pinfo){
                 pinfo = [];
             }
-            while(pinfo.length > 10){
+            while(pinfo.length > 20){
                 pinfo.splice(0,1);
             }
             pinfo.push({'filterResultTotal':filterResult.total
@@ -812,7 +812,7 @@ class Analysis {
             let beta = this.nelderMeadForTimeEstimation(val,ans);
             this.statisticDataRecorder.save("estim_total_beta",beta);
 
-            let beta2 = this.nelderMeadForTimeEstimation(val,ans);
+            let beta2 = this.nelderMeadForTimeEstimation(val2,ans);
             this.statisticDataRecorder.save("estim_acc_beta",beta2);
 
         }
@@ -1123,6 +1123,7 @@ class Analysis {
         });
     }
 
+    //ページ数表示とかのために数を数える
     getDataSetClusterCount(dataSetId, conditions, threshold, callback) {
         if (this.db == null) {
             callback(0);
@@ -1148,19 +1149,19 @@ class Analysis {
                 query += ' AND ' + target + '.count >= ? ';
                 params.push(threshold['count']);
             }
-            if (threshold['A'] > 0) {
+            if (threshold['A'] < 100) {
                 query += ' AND ' + target + '.a_ratio <= ? ';
                 params.push(threshold['A'] / 100.0);
             }
-            if (threshold['C'] > 0) {
+            if (threshold['C'] < 100) {
                 query += ' AND ' + target + '.c_ratio <= ? ';
                 params.push(threshold['C'] / 100.0);
             }
-            if (threshold['G'] > 0) {
+            if (threshold['G'] < 100) {
                 query += ' AND ' + target + '.g_ratio <= ? ';
                 params.push(threshold['G'] / 100.0);
             }
-            if (threshold['T'] > 0) {
+            if (threshold['T'] < 100) {
                 query += ' AND ' + target + '.t_ratio <= ? ';
                 params.push(threshold['T'] / 100.0);
             }
@@ -1215,7 +1216,11 @@ class Analysis {
             seq_name: c.seq_name,
             dataset_id: c.dataset_id,
             sequence: c.sequence.split('-'),
-            count: c.count
+            count: c.count,
+            a_ratio: c.a_ratio,
+            c_ratio: c.c_ratio,
+            g_ratio: c.g_ratio,
+            t_ratio: c.t_ratio
         }));
         callback(clusterList);
     }
@@ -1235,7 +1240,11 @@ class Analysis {
             + "     clusters.name AS name, "
             + "     sequences.name AS seq_name, "
             + "     clusters.sequence AS sequence, "
-            + "     clusters.count AS count "
+            + "     clusters.count AS count, "
+            + "     clusters.a_ratio AS a_ratio, "
+            + "     clusters.c_ratio AS c_ratio, "
+            + "     clusters.g_ratio AS g_ratio, "
+            + "     clusters.t_ratio AS t_ratio "
             + " FROM "
             + "     clusters "
             + "     INNER JOIN sequences on clusters.dataset_id = sequences.dataset_id AND clusters.sequence = sequences.sequence "
@@ -1261,7 +1270,11 @@ class Analysis {
             + "     clusters.name AS name, "
             + "     sequences.name AS seq_name, "
             + "     clusters.sequence AS sequence, "
-            + "     clusters.count AS count "
+            + "     clusters.count AS count, "
+            + "     clusters.a_ratio AS a_ratio, "
+            + "     clusters.c_ratio AS c_ratio, "
+            + "     clusters.g_ratio AS g_ratio, "
+            + "     clusters.t_ratio AS t_ratio "
             + " FROM "
             + "     clusters "
             + "     INNER JOIN sequences on clusters.dataset_id = sequences.dataset_id AND clusters.sequence = sequences.sequence "
@@ -1280,7 +1293,11 @@ class Analysis {
             + "     clusters.name AS name, "
             + "     sequences.name AS seq_name, "
             + "     clusters.sequence AS sequence, "
-            + "     clusters.count AS count "
+            + "     clusters.count AS count, "
+            + "     clusters.a_ratio AS a_ratio, "
+            + "     clusters.c_ratio AS c_ratio, "
+            + "     clusters.g_ratio AS g_ratio, "
+            + "     clusters.t_ratio AS t_ratio "
             + " FROM "
             + "     clusters "
             + "     INNER JOIN sequences on clusters.dataset_id = sequences.dataset_id AND clusters.sequence = sequences.sequence "
@@ -1370,6 +1387,7 @@ class Analysis {
         this.getClusterSequenceCountImpl(dataSetId, clusterId, { key: null }, null,'SUM(count)', callback);
     }
 
+    //sequence として返るのは文字列の配列であり、0 が 5' primer, 1 が variables, 2 が 3' primer
     processSequenceData(sequences, representative, callback) {
         const self = this;
         let seqList = sequences.map(function(seq) {
@@ -1385,7 +1403,11 @@ class Analysis {
                 cluster_id: seq.cluster_id,
                 sequence: sequence,
                 distance: distance,
-                count: seq.count
+                count: seq.count,
+                a_ratio: seq.a_ratio,
+                c_ratio: seq.c_ratio,
+                g_ratio: seq.g_ratio,
+                t_ratio: seq.t_ratio
             };
         });
         callback(seqList);
@@ -1454,7 +1476,18 @@ class Analysis {
         });
     }
 
-    //Cluster に含まれる配列のカウントを representative にならない場合でも取れるようになっているはず
+    //指定の配列の数を取得する
+    getSequenceCount(dataSetId, sequence, callback) {
+        let that = this;
+        that.db.get('SELECT * FROM sequences WHERE dataset_id = ? AND sequence LIKE ?', [dataSetId, '%-' + sequence + '-%'], function (serror, srows) {
+            if (serror) {
+                throw serror;
+            }
+            callback(srows ? srows.count : 0);
+        });
+    }
+
+    //指定の配列が含まれる Cluster に含まれる全配列の数を取得する
     getClusterCount_All(dataSetId, sequence, callback) {
         let that = this;
         that.db.get('SELECT * FROM sequences WHERE dataset_id = ? AND sequence LIKE ?', [dataSetId, '%-' + sequence + '-%'], function (serror, srows) {
@@ -1475,56 +1508,139 @@ class Analysis {
         });
     }
 
-    prepareCompareDataImpl(dataSets, sequences, dataSetIndex, sequenceIndex, data, check_family_members, callback) {
+    prepareCompareDataImpl(dataSets, sequences, dataSetIndex, sequenceIndex, data, compareTarget, callback) {
         const self = this;
         if (dataSetIndex >= dataSets.length) {
             if ((sequenceIndex + 1) >= sequences.length) {
                 callback(data);
             } else {
-                self.prepareCompareDataImpl(dataSets, sequences, 0, sequenceIndex + 1, data, check_family_members, callback);
+                self.prepareCompareDataImpl(dataSets, sequences, 0, sequenceIndex + 1, data, compareTarget, callback);
             }
         } else {
             let dataSetId = dataSets[dataSetIndex].id;
-            if(check_family_members){
+            if(compareTarget == "cluster_all"){
                 self.getClusterCount_All(dataSetId, sequences[sequenceIndex], function(count) {
                     if (sequenceIndex >= data.length) {
                         data.push({sequence: sequences[sequenceIndex], counts: {}});
                     }
                     data[sequenceIndex]['counts'][dataSetId] = count;
-                    self.prepareCompareDataImpl(dataSets, sequences, dataSetIndex + 1, sequenceIndex, data, check_family_members, callback);
+                    self.prepareCompareDataImpl(dataSets, sequences, dataSetIndex + 1, sequenceIndex, data, compareTarget, callback);
                 });
-            }else{
+            }else if(compareTarget == "cluster_representative"){
                 self.getClusterCount(dataSetId, sequences[sequenceIndex], function(count) {
                     if (sequenceIndex >= data.length) {
                         data.push({sequence: sequences[sequenceIndex], counts: {}});
                     }
                     data[sequenceIndex]['counts'][dataSetId] = count;
-                    self.prepareCompareDataImpl(dataSets, sequences, dataSetIndex + 1, sequenceIndex, data, check_family_members, callback);
+                    self.prepareCompareDataImpl(dataSets, sequences, dataSetIndex + 1, sequenceIndex, data, compareTarget, callback);
                 });
+            }else if (compareTarget == "sequences"){
+                self.getSequenceCount(dataSetId, sequences[sequenceIndex], function(count) {
+                    if (sequenceIndex >= data.length) {
+                        data.push({sequence: sequences[sequenceIndex], counts: {}});
+                    }
+                    data[sequenceIndex]['counts'][dataSetId] = count;
+                    self.prepareCompareDataImpl(dataSets, sequences, dataSetIndex + 1, sequenceIndex, data, compareTarget, callback);
+                });
+            }else{
+                console.log(compareTarget+" is not a valid target tag.");
             }
         }
     }
 
-    prepareCompareData(dataSets, sequecnes, check_family_members,callback) {
+    setCompareDataFilter(searchkey,threshold){
+        this.compareSearchKey = searchkey;
+        this.compareThreshold = threshold;
+    }
+
+    prepareCompareData(dataSets, sequecnes, compareTarget,callback) {
         const self = this;
-        self.prepareCompareDataImpl(dataSets, sequecnes, 0, 0, [], check_family_members,function(data) {
+        self.prepareCompareDataImpl(dataSets, sequecnes, 0, 0, [], compareTarget,function(data) {
             callback(data);
         });
     }
 
-    getCompareData(dataSetId, numberOfCompare, page, check_family_members, callback) {
+    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, callback) {
         const self = this;
-        //ToDo: numberOfCompare が Preference と機能重複しているので変更
-        self.getDataSets(function(dataSets) {
-            self.getClusters(dataSetId, null, null, null, 0, function(result) {
-                let clusters = result.clusters;
-                let start = (page - 1) * numberOfCompare;
-                let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
-                self.prepareCompareData(dataSets, sequences, check_family_members, function(data) {
-                    callback(dataSets, data);
-                })
-            });
-        });
+        if(false){//ToDo チェックボックスで指定させる
+            //上昇傾向でソートする
+            let sorter_func = function(dataSets, sequences, compareTarget){
+                self.prepareCompareData(dataSets, sequences, compareTarget, function(data_tmp) {
+                    let data_sorter = [];
+                    for(let tt = 0;tt < data_tmp.length;tt++){
+                        if(dataSets.length > 1){
+                            let diffsum = 0;
+                            let ratio_0 = data_tmp[tt].counts[dataSets[0].id] / dataSets[0].accepted_cluster_sequences * 100;
+                            for(let dd = 1;dd < dataSets.length-1;dd++){
+                                let ratio_1 = data_tmp[tt].counts[dataSets[dd+1].id] / dataSets[dd+1].accepted_cluster_sequences * 100;
+                                diffsum += (ratio_1-ratio_0)*dd;
+                            }
+                            data_sorter.push([diffsum,data_tmp[tt]]);
+                        }else{
+                            data_sorter.push([0,data_tmp[0]]);
+                        }
+                    }
+                    data_sorter.sort(
+                        function(a,b){
+                            if(a[0] < b[0]){
+                                return -1;
+                            }
+                            if(a[0] > b[0]){
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    );
+                    data_sorter.reverse();
+                    callback(dataSets, data_sorter.map((item) => { return item[1]; }));
+                });
+            };
+            
+            if(compareTarget == 'sequences'){
+                //ToDo: numberOfCompare が Preference と機能重複しているので変更
+                self.getDataSets(function(dataSets) {
+                    self.getSequences(dataSetId, null, filterSettings["conditions"]["key"], null, 0, filterSettings["threshold"], function(result) {
+                        let sequence_list = result.sequences;
+                        let sequences = sequence_list.map((item) => { return item.sequence[1]; });
+                        //全エントリ取って最初のラウンドの ratio と最終ラウンドの ratio の差でソートする
+                        sorter_func(dataSets, sequences, compareTarget);
+                    });
+                });
+            }else{
+                self.getDataSets(function(dataSets) {
+                    self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
+                        let clusters = result.clusters;
+                        let sequences = clusters.map((item) => { return item.sequence[1]; });
+                        sorter_func(dataSets, sequences, compareTarget);
+                    });
+                });
+            }
+        }else{
+            if(compareTarget == 'sequences'){
+                //ToDo: numberOfCompare が Preference と機能重複しているので変更
+                self.getDataSets(function(dataSets) {
+                    self.getSequences(dataSetId, null, filterSettings["conditions"]["key"], null, 0, filterSettings["threshold"], function(result) {
+                        let sequence_list = result.sequences;
+                        let start = (page - 1) * numberOfCompare;
+                        let sequences = sequence_list.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
+                            callback(dataSets, data);
+                        })
+                    });
+                });
+            }else{
+                self.getDataSets(function(dataSets) {
+                    self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
+                        let clusters = result.clusters;
+                        let start = (page - 1) * numberOfCompare;
+                        let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
+                            callback(dataSets, data);
+                        })
+                    });
+                });
+            }
+        }
     }
 
     getDataSetInfo(dataSetId, callback) {
@@ -1554,7 +1670,7 @@ class Analysis {
             callback(files);
             return;
         }
-
+        //一時ファイルに Fasta を出力
         let dataSetId = dataSets[index].id;
         temp.open('fasta', function(error, info) {
             if (error) {
@@ -1697,6 +1813,7 @@ class Analysis {
         const self = this;
         self.getDataSets(function(dataSets) {
             self.exportDataSetAsFasta(dataSets, function(fileList) {
+                //exportSettings はラウンドを key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
                 let config = Object.keys(exportSettings).reduce(function(list, id) {
                     if (exportSettings[id] == 1) {
                         list['includes'].push(fileList[id]);
@@ -1722,8 +1839,8 @@ class Analysis {
         });
     }
 
-    exportCompareData(dataSetId, numberOfCompare, page, filename, check_family_members, callback) {
-        this.getCompareData(dataSetId, numberOfCompare, page, check_family_members, function(dataSets, dataList) {
+    exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget, filterSettings,callback) {
+        this.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, dataList) {
             fs.open(filename, 'w', function(error, fd) {
                 if (error) {
                     throw error;

@@ -4,8 +4,8 @@
 <template>
     <div class="DataSetList">
         <h3>Datasets</h3>
-        <draggable v-model="dataSetList" @start="drag=true" @end="drag=false" @choose="dataSetSelected" @sort="onSort">
-            <div v-for="element in dataSetList" :key="element.id" v-bind:class="{ selected: element.id == selected }">{{element.name}}</div>
+        <draggable v-model="$data.dataSetList_This" @start="drag=true" @end="drag=false" @choose="dataSetSelected" @sort="onSort">
+            <div v-for="element in $data.dataSetList_This" :key="element.id" v-bind:class="{ selected: element.id == selected }">{{element.name}}</div>
         </draggable>
         <hr/>
     </div>
@@ -22,17 +22,27 @@ export default {
     name: 'DataSetList',
     props: {
         msg: String,
-        dataSetList: Array,
+        //dataSetList: Array,//Avoid mutating a prop directly エラーが起きる？
         selected: Number,
+    },
+    data() {
+        return {
+            dataSetList_This: []
+        };
+    },
+    created(){
     },
     methods: {
         onSort: function() {
-            let list = this.dataSetList.map((item) => { return item.id });
+            let list = this.$data.dataSetList_This.map((item) => { return item.id });
             ipcRenderer.send('onSorted', list);
+        },
+        updateList: function(datasetlist){
+            this.$data.dataSetList_This = datasetlist;
         },
         dataSetSelected: function(event) {
             let index = event.oldIndex;
-            this.$emit('dataSetChanged', this.dataSetList[index].id);
+            this.$emit('dataSetChanged', this.$data.dataSetList_This[index].id);
         },
     }
 }
@@ -45,5 +55,6 @@ export default {
     }
     div.DataSetList {
         margin: 10px;
+        word-break : break-all;
     }
 </style>

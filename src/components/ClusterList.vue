@@ -20,19 +20,19 @@
                     </div>
                 </div>
             </div>
-            <div class="filter">
+            <div class="filter" id="filter_cluster_div">
                 <div class="row">
                     <div class="col-sm-9 keyword">
-                        <span class="label">Sequence:</span><input type="text" v-model="conditions.key" placeholder='Search Key'/>
-                        <label><input type="checkbox" v-model="conditions.primary_only" />Primary Only</label>
+                        <span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.key" placeholder='Search Key'/>
+                        <label><input type="checkbox" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.primary_only" />Primary Only</label>
                     </div>
-                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
@@ -57,6 +57,10 @@
                     <th v-if="preferences.view.items.includes('total_length')">Total Length</th>
                     <th v-if="preferences.view.items.includes('count')">Count</th>
                     <th v-if="preferences.view.items.includes('ratio')">Ratio</th>
+                    <th v-if="preferences.view.items.includes('a_ratio')">A Ratio</th>
+                    <th v-if="preferences.view.items.includes('c_ratio')">C Ratio</th>
+                    <th v-if="preferences.view.items.includes('g_ratio')">G Ratio</th>
+                    <th v-if="preferences.view.items.includes('t_ratio')">T Ratio</th>
                 </tr>
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
@@ -79,6 +83,10 @@
                     <td v-if="preferences.view.items.includes('total_length')">{{cluster.sequence.reduce((lhs, rhs) => lhs + rhs.length, 0)}}</td>
                     <td v-if="preferences.view.items.includes('count')">{{cluster.count}} / {{totalCount}}</td>
                     <td v-if="preferences.view.items.includes('ratio')">{{(cluster.count / totalCount * 100).toFixed(2)}}%</td>
+                    <td v-if="preferences.view.items.includes('a_ratio')">{{(cluster.a_ratio * 100).toFixed(2)}}%</td>
+                    <td v-if="preferences.view.items.includes('c_ratio')">{{(cluster.c_ratio * 100).toFixed(2)}}%</td>
+                    <td v-if="preferences.view.items.includes('g_ratio')">{{(cluster.g_ratio * 100).toFixed(2)}}%</td>
+                    <td v-if="preferences.view.items.includes('t_ratio')">{{(cluster.t_ratio * 100).toFixed(2)}}%</td>
                 </tr>
             </table>
         </div>
@@ -141,6 +149,12 @@ export default {
         }
     },
     methods: {
+        
+        colorFilterBackground: function(divid,color_str) {
+            let ddiv = document.getElementById(divid);
+            ddiv.style["background-color"] = color_str;
+        },
+
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
         },
@@ -148,6 +162,8 @@ export default {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
         },
         searchClusterThreshold: function() {
+            let ddiv = document.getElementById("filter_cluster_div");
+            ddiv.style["background-color"] = "#ffffff";
             this.$emit('searchClusterThreshold', this.conditions, this.threshold);
         },
         nextPage: function() {

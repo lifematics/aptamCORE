@@ -21,14 +21,14 @@
                         <multipane-resizer></multipane-resizer>
                     </multipane>
                     <sequence-list  v-if="mode == 'sequence'" :preferences="preferences" :totalCount="allSequenceCount" :sequenceList="allSequenceList" :dataSetId="activeDataSet" :clusterId=null :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :aThreshold="aThreshold" :cThreshold="cThreshold" :tThreshold="tThreshold" :gThreshold="gThreshold" :clusterThreshold="clusterThreshold" :page="pageOfAllSequences" v-on:nextPage="nextAllSequencePage" v-on:prevPage="prevAllSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
-                    <compare-view v-if="mode == 'compare'" :preferences="preferences" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :checkFamilyMembers="checkFamilyMembers" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:checkFamilyMembersCompare="checkFamilyMembersCompare" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
+                    <compare-view v-if="mode == 'compare'" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
                     <venn-view v-if="mode == 'venn'"></venn-view>
                 </div>
             </div>
 
             <div class="leftPanel">
                 <div class="content">
-                    <data-set-list :dataSetList="dataSetList" :selected="activeDataSet" v-on:dataSetChanged="dataSetChanged"/>
+                    <data-set-list ref="datasetListComponent" :selected="activeDataSet" v-on:dataSetChanged="dataSetChanged"/>
                     <div class="button-container">
                         <button v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
                     </div>
@@ -110,7 +110,7 @@
                 compareWidth: 400,
                 compareHeight: 450,
                 compareNumber: 5,
-                checkFamilyMembers:false,
+                compareTarget:"cluster_representative",
                 mode: 'home',
                 pageOfClusters: {'total': 1, 'current': 1, 'from': 1, 'to': 1},
                 pageOfSequences: {'total': 1, 'current': 1, 'from': 1, 'to': 1},
@@ -158,6 +158,9 @@
             ipcRenderer.on('dataSetListChanged', (event, datasets) => {
                 this.isLoading = false;
                 this.dataSetList = datasets;
+                if(this.$refs.datasetListComponent){
+                    this.$refs.datasetListComponent.updateList(this.dataSetList);
+                }
                 if (this.dataSetList.length > 0) {
                     this.dataSetChanged(this.dataSetList[0].id);
                 }
@@ -381,16 +384,19 @@
             changeCompareNumber: function(numberOfCompare) {
                 this.compareNumber = numberOfCompare;
             },
-            checkFamilyMembersCompare:function(value) {
-                this.checkFamilyMembers = value;
+            setCompareTargetApp:function(value) {
+                this.compareTarget = value;
             },
             updateCompareData: function() {
-                ipcRenderer.send('load-compare-data', [
-                 this.activeDataSet,
-                 this.compareNumber,
-                 this.pageOfCompares.current,
-                 this.checkFamilyMembers
-                 ]
+                this.clusterThreshold['count'] = Math.ceil(this.allSequenceCount * this.clusterThreshold['ratio'] / 100.0);
+                ipcRenderer.send('load-compare-data',
+                    {
+                        "dataset_id":this.activeDataSet,
+                        "number_of_compare":this.compareNumber,
+                        "page":this.pageOfCompares.current,
+                        "compare_target":this.compareTarget,
+                        "filter_settings": {"conditions":this.clusterSearchConditions,"threshold":this.clusterThreshold}
+                    }
                  );
             },
             analyze: function() {
@@ -437,7 +443,7 @@
                         this.getAllSequenceList();
                         break;
                     case 'compare':
-                        this.updateCompareData(this.compareNumber);
+                        this.updateCompareData();
                         break;
                     default:
                 }
