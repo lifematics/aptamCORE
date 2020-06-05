@@ -122,6 +122,7 @@ app.on('ready', () => {
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
     analysis.setStatisticDataRecorder(statisticData);
+    analysis.setPreferences(appPreferences);
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
     });

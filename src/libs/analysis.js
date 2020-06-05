@@ -115,6 +115,7 @@ class Analysis {
         this.tempDir = null;
         this.notifier = new Notifier();
         this.statisticDataRecorder = null;
+        this.appPreferences = null;
     }
     
     setStatisticDataRecorder(rec){
@@ -125,6 +126,9 @@ class Analysis {
         this.notifier.setConfigs(apiKey, domain);
     }
 
+    setPreferences(pref){
+        this.appPreferences = pref;
+    }
     create(path, callback) {
         if (fs.existsSync(path)) {
             fs.unlinkSync(path);
@@ -1719,17 +1723,134 @@ class Analysis {
         });
     }
 
-    exportAsCsv(filename, dataList, callback) {
+    exportAsCsv(filename, sqlresult ,datatype, callback) {
+        let that = this;
+        let dataList=null;
+        if(datatype == "cluster") {
+            dataList = sqlresult.clusters;
+        }else if(datatype == "family_sequence"){
+            dataList = sqlresult.sequences;
+        }else if (datatype== "sequence"){
+            dataList = sqlresult.sequences;
+        }else{
+            throw "Undefined datatype "+datatype; 
+        }
         fs.open(filename, 'w', function(error, fd) {
             if (error) {
                 throw error;
             }
+            if(!that.appPreferences){
+                fs.writeSync(fd, "ID,Name,Sequence,Count\r\n");
+                dataList.forEach((dataItem) => {
+                    fs.writeSync(fd, dataItem.id + "," + dataItem.name + "," + dataItem.sequence.join('') + "," + dataItem.count + "\r\n");
+                });
 
-            fs.writeSync(fd, "ID,Name,Sequence,Count\r\n");
-            dataList.forEach((dataItem) => {
-                fs.writeSync(fd, dataItem.id + "," + dataItem.name + "," + dataItem.sequence.join('') + "," + dataItem.count + "\r\n");
-            });
+            }else{
+                let preferences = that.appPreferences.get();
+                let tags = [];
+                if(datatype == "cluster") {
+                    tags = ['id',
+                    'ngs_id',
+                    'head',
+                    'variable',
+                    'tail',
+                    'variable_length',
+                    'total_length',
+                    'count',
+                    'ratio',
+                    'a_ratio',
+                    'c_ratio',
+                    'g_ratio',
+                    't_ratio'];
+                }else if(datatype == "family_sequence"){
+                    tags = ['id',
+                    'ngs_id',
+                    'head',
+                    'variable',
+                    'tail',
+                    'variable_length',
+                    'total_length',
+                    'count',
+                    'ratio',
+                    'a_ratio',
+                    'c_ratio',
+                    'g_ratio',
+                    't_ratio',
+                    'variable_distance'
+                    ];
+                }else if (datatype== "sequence"){
 
+                    tags = ['id',
+                    'ngs_id',
+                    'head',
+                    'variable',
+                    'tail',
+                    'variable_length',
+                    'total_length',
+                    'count',
+                    'ratio',
+                    'a_ratio',
+                    'c_ratio',
+                    'g_ratio',
+                    't_ratio'
+                    ];
+
+                }else{
+                    throw "Undefined datatype "+datatype; 
+                }
+                let utags = [];
+                for(let ii = 0;ii < tags.length;ii++){
+                    if(preferences.view.items.includes(tags[ii])){
+                        utags.push(tags[ii]);
+                    }
+                }
+                for(let ii = 0;ii < utags.length;ii++){
+                    fs.writeSync(fd, utags[ii]);
+                    if(ii < utags.length-1){
+                        fs.writeSync(fd,",");
+                    }else{
+                        fs.writeSync(fd,"\r\n");
+                    }
+                }
+                dataList.forEach((ddat) => {
+                    let dats = {
+                    'id':ddat.id,
+                    'ngs_id':"",
+                    'head': ddat.sequence[0],
+                    'variable': ddat.sequence[1],
+                    'tail': ddat.sequence[2],
+                    'variable_length':ddat.sequence[1].length,
+                    'total_length': ddat.sequence[0].length+ddat.sequence[1].length+ddat.sequence[2].length,
+                    'count':ddat.count+"/"+sqlresult["sequence_count"],
+                    'ratio':(ddat.count/sqlresult["sequence_count"]*100)+"%",
+                    'a_ratio':(ddat.a_ratio*100)+"%",
+                    'c_ratio':(ddat.c_ratio*100)+"%",
+                    'g_ratio':(ddat.g_ratio*100)+"%",
+                    't_ratio':(ddat.t_ratio*100)+"%"
+                    };
+
+                    if(datatype == "cluster"){
+                        dats["ngs_id"] = ddat.sequence_name;
+                    }else{
+                        dats["ngs_id"] = ddat.name;
+                    }
+
+                    if(datatype == "family_sequence"){
+                        dats["variable_distance"] = ddat.distance;
+                    }
+
+                    for(let ii = 0;ii < utags.length;ii++){
+                        fs.writeSync(fd, dats[utags[ii]]+"");
+                        if(ii < utags.length-1){
+                            fs.writeSync(fd,",");
+                        }else{
+                            fs.writeSync(fd,"\r\n");
+                        }
+                    }
+                });
+
+
+            }
             fs.close(fd, function(error) {
                 if (error) {
                     throw error;
@@ -1764,10 +1885,11 @@ class Analysis {
     exportClusters(dataSetId, filename, conditions ,clusterThresholdNumber, callback) {
         const self = this;
         self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
-            let clusters = result.clusters;
+            //let clusters = result.clusters;
             let ext = path.extname(filename);
             if (ext == '.csv') {
-                self.exportAsCsv(filename, clusters, callback);
+                console.log(result["sequence_count"]);
+                self.exportAsCsv(filename, result, "cluster",callback);
             } else if (ext == '.fasta') {
                 self.exportAsFasta(filename, clusters, callback);
             }
@@ -1779,7 +1901,11 @@ class Analysis {
         self.getSequences(dataSetId, clusterId, key, null, null, threshold, function (result) {
             let ext = path.extname(filename);
             if (ext == '.csv') {
-                self.exportAsCsv(filename, result.sequences, callback);
+                if(clusterId !== null){
+                    self.exportAsCsv(filename, result,"family_sequence", callback);
+                }else{
+                    self.exportAsCsv(filename, result,"sequence", callback);
+                }
             } else if (ext == '.fasta') {
                 self.exportAsFasta(filename, result.sequences, callback);
             }
