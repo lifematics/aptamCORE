@@ -19,6 +19,10 @@
                             <sequence-list :config="config" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
+                        <div :style="{  height: '400px', overflow: 'scroll' }">
+                            <compare-view :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
+                        </div>
+                        <multipane-resizer></multipane-resizer>
                     </multipane>
                     <sequence-list  v-if="mode == 'sequence'" :preferences="preferences" :totalCount="allSequenceCount" :sequenceList="allSequenceList" :dataSetId="activeDataSet" :clusterId=null :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :aThreshold="aThreshold" :cThreshold="cThreshold" :tThreshold="tThreshold" :gThreshold="gThreshold" :clusterThreshold="clusterThreshold" :page="pageOfAllSequences" v-on:nextPage="nextAllSequencePage" v-on:prevPage="prevAllSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                     <compare-view v-if="mode == 'compare'" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
@@ -236,7 +240,9 @@
                 this.isLoading = false;
             });
             ipcRenderer.on('showSettingsDialog', () => {
-
+            });
+            ipcRenderer.on('set-search-cluster-threshold', (e,arg) => {
+                this.searchClusterThreshold(arg['conditions'],arg['threshold']);
             });
             ipcRenderer.on('set-compare-data', (event, args) => {
                 this.compareDataSets = args['dataSets'];

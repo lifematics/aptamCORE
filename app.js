@@ -149,7 +149,18 @@ app.on('ready', () => {
 	        });
         } else {
 	        analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
-	            window.webContents.send('sequenceListChanged', result);
+                window.webContents.send('sequenceListChanged', result);
+                let numberOfCompare = 5;
+                let page = 1;
+                let compareTarget = "cluster_representative";
+                console.log(result['sequences'][0]['sequence'][1]);
+                let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:false}
+                ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
+                window.webContents.send("set-search-cluster-threshold",filterSettings);
+                Compare と Cluster で値を共有しているので、こちらで filter するとテーブルの方も Filter されてしまう。
+                analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
+                    window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: 100, page: page, size: numberOfCompare });
+                });
 	        });
         }
     });
