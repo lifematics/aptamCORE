@@ -6,6 +6,10 @@
         <div>
             <div class="row header-control">
                 <div class="col-sm-4">
+                    <div class="row" id="subframediv" style="margin-top:5px">
+                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_member" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_member">Member</label> 
+                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_compare" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_compare">Compare</label> 
+                    </div> 
                 </div>
                 <div class="col-sm-4">
                     <div class="page-control">
@@ -29,10 +33,10 @@
                     <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
@@ -108,6 +112,7 @@ export default {
         config: Object,
         page: Object,
         clusterThreshold: Object,
+        clusterSubFrame:String,
     },
     created() {
         this.conditions['key'] = this.clusterSearchConditions['key'];
@@ -134,7 +139,8 @@ export default {
             conditions: {
                 key: '',
                 primary_only: true,
-            },
+            }, 
+            clusterSubFrame_This:"member",
             threshold: {
                 ratio: 0,
                 A: 100,
@@ -154,7 +160,9 @@ export default {
             let ddiv = document.getElementById(divid);
             ddiv.style["background-color"] = color_str;
         },
-
+        changeSubFrame:function(){
+            this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
+        },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
         },

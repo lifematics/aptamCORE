@@ -12,15 +12,13 @@
                     <info-view v-if="mode == 'info'" :config="config" :info="info" ></info-view>
                     <multipane layout="horizontal" v-if="mode == 'cluster'">
                         <div :style="{ height: '400px', overflow: 'scroll' }">
-                            <cluster-list :config="config" :preferences="preferences" :totalCount="seqCountOfDataSet" :clusterList="clusterList" :selected="activeCluster" :dataSetId="activeDataSet" v-on:clusterChanged="clusterChanged" :clusterSearchConditions="clusterSearchConditions" :page="pageOfClusters" :sequencesThreshold="sequencesThreshold" :clusterThreshold="clusterThreshold" v-on:nextPage="nextClusterPage" v-on:prevPage="prevClusterPage" v-on:searchClusterThreshold="searchClusterThreshold"/>
+                            <cluster-list :config="config" :clusterSubFrame:="clusterSubFrame" :preferences="preferences" :totalCount="seqCountOfDataSet" :clusterList="clusterList" :selected="activeCluster" :dataSetId="activeDataSet" v-on:clusterChanged="clusterChanged" v-on:changeClusterSubFrame="changeClusterSubFrame"  :clusterSearchConditions="clusterSearchConditions" :page="pageOfClusters" :sequencesThreshold="sequencesThreshold" :clusterThreshold="clusterThreshold" v-on:nextPage="nextClusterPage" v-on:prevPage="prevClusterPage" v-on:searchClusterThreshold="searchClusterThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
                         <div :style="{  height: '400px', overflow: 'scroll' }">
-                            <sequence-list :config="config" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
-                        </div>
-                        <multipane-resizer></multipane-resizer>
-                        <div :style="{  height: '400px', overflow: 'scroll' }">
-                            <compare-view :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
+                            <compare-one-view  ref="compareOneComponent"  v-if="clusterSubFrame == 'compare'"  v-on:exportCompareOneCSV="exportCompareOneCSV"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :compareTarget="compareTarget"  :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight">
+                            </compare-one-view>
+                            <sequence-list  v-if="clusterSubFrame == 'member'" :config="config" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
                     </multipane>
@@ -66,6 +64,7 @@
     import ClusterList from './components/ClusterList.vue';
     import SequenceList from './components/SequenceList.vue';
     import CompareView from './components/CompareView.vue';
+    import CompareOneView from './components/CompareOneView.vue';
     import VennView from './components/VennView.vue';
     const { ipcRenderer } = window.require('electron');
 
@@ -84,6 +83,7 @@
             ClusterList,
             SequenceList,
             CompareView,
+            CompareOneView,
             VennView,
             Loading,
             Multipane,
@@ -113,7 +113,10 @@
                 compareDataList: null,
                 compareWidth: 400,
                 compareHeight: 450,
+                compareOneWidth: 800,
+                compareOneHeight: 300,
                 compareNumber: 5,
+                clusterSubFrame:"member",
                 compareTarget:"cluster_representative",
                 mode: 'home',
                 pageOfClusters: {'total': 1, 'current': 1, 'from': 1, 'to': 1},
@@ -131,6 +134,13 @@
                 },
                 deep: true,
             },
+            clusterSubFrame:{
+                handler: function(val,){
+                    if(val == "compare"){
+                        this.getSequenceList();
+                    }
+                }
+            }
         },
         created() {
             ipcRenderer.on('preferencesChanged', (event, preferences) => {
@@ -254,6 +264,11 @@
                 let total = Math.floor((args['total'] + size - 1) / size);
                 this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to }
             });
+            ipcRenderer.on('update-compare-one-view',(event, args) => {
+                if(this.clusterSubFrame == "compare"){
+                    this.$refs.compareOneComponent.updateCompareView(args['dataSets'],args['data']);
+                }
+            });
 
             this.getDataSetList();
             ipcRenderer.send('load-preferences', []);
@@ -262,6 +277,9 @@
         methods: {
             configChanged: function(config) {
                 this.config = config;
+            },
+            changeClusterSubFrame: function(framename){
+                this.clusterSubFrame = framename;
             },
             dataSetChanged: function(name) {
                 this.activeDataSet = parseInt(name);
@@ -330,7 +348,7 @@
                 ipcRenderer.send('load-clusters', [this.activeDataSet, this.clusterSearchConditions, this.preferences.view.list_size, this.pageOfClusters.current, threshold]);
             },
             getSequenceList: function() {
-                this.isLoading = true;
+                //this.isLoading = true;
                 let threshold = {
                     A: this.sequencesThreshold['A'],
                     C: this.sequencesThreshold['C'],
@@ -387,6 +405,10 @@
                 };
                 ipcRenderer.send('load-all-sequences', [this.activeDataSet, this.preferences.view.list_size, this.pageOfAllSequences.current, threshold]);
             },
+            exportCompareOneCSV: function(args){
+                args["dataset_id"] = this.activeDataSet;
+                ipcRenderer.send('export-compare-data',args);
+            },
             changeCompareNumber: function(numberOfCompare) {
                 this.compareNumber = numberOfCompare;
             },
@@ -401,7 +423,8 @@
                         "number_of_compare":this.compareNumber,
                         "page":this.pageOfCompares.current,
                         "compare_target":this.compareTarget,
-                        "filter_settings": {"conditions":this.clusterSearchConditions,"threshold":this.clusterThreshold}
+                        "filter_settings": {"conditions":this.clusterSearchConditions
+                        ,"threshold":this.clusterThreshold}
                     }
                  );
             },
