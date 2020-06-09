@@ -93,7 +93,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    window.webContents.openDevTools()
+    //window.webContents.openDevTools()
 
     // Emitted when the window is closed.
     window.on('closed', () => {
