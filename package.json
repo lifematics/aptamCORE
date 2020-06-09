@@ -1,7 +1,7 @@
 {
   "name": "aptamCORE",
   "productName": "aptamCORE",
-  "version": "1.2",
+  "version": "1.2.0",
   "main": "app.js",
   "private": true,
   "scripts": {
