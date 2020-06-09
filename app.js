@@ -150,8 +150,7 @@ app.on('ready', () => {
         } else {
 	        analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 window.webContents.send('sequenceListChanged', result);
-
-                let numberOfCompare = 5;
+                let numberOfCompare = 1;
                 let page = 1;
                 let compareTarget = "cluster_representative";
                 console.log(result['sequences'][0]['sequence'][1]);
@@ -161,8 +160,7 @@ app.on('ready', () => {
                 //Compare と Cluster で値を共有しているので、こちらで filter するとテーブルの方も Filter されてしまう。
                 analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                     //window.webContents.send('update-compare-one-view', { dataSets: dataSets, data: data, total: 100, page: page, size: numberOfCompare });
-                    window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
-                    window.webContents.send('update-compare-one-view');
+                    window.webContents.send('update-compare-one-view', { dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
                 });
 	        });
         }
@@ -383,7 +381,6 @@ app.on('ready', () => {
         showOpenAnalysisDialog();
     });
 });
-
 function showNewAnalysisDialog(){
     dialog.showSaveDialog(null, {
         properties: ['promptToCreate'],
