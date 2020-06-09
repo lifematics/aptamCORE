@@ -20,7 +20,7 @@
                         </div>
                         <multipane-resizer></multipane-resizer>
                         <div :style="{  height: '400px', overflow: 'scroll' }">
-                            <compare-view :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
+                            <compare-one-view  ref="compareOneComponent" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :compareTarget="compareTarget" :graphWidth="compareWidth" :graphHeigh="compareHeight"></compare-one-view>
                         </div>
                         <multipane-resizer></multipane-resizer>
                     </multipane>
@@ -66,6 +66,7 @@
     import ClusterList from './components/ClusterList.vue';
     import SequenceList from './components/SequenceList.vue';
     import CompareView from './components/CompareView.vue';
+    import CompareOneView from './components/CompareOneView.vue';
     import VennView from './components/VennView.vue';
     const { ipcRenderer } = window.require('electron');
 
@@ -84,6 +85,7 @@
             ClusterList,
             SequenceList,
             CompareView,
+            CompareOneView,
             VennView,
             Loading,
             Multipane,
@@ -168,6 +170,9 @@
                 if (this.dataSetList.length > 0) {
                     this.dataSetChanged(this.dataSetList[0].id);
                 }
+            });
+            ipcRenderer.on('update-compare-one-view', () => {
+                this.$refs.compareOneComponent.updateCompareView();
             });
             ipcRenderer.on('clusterListChanged', (event, result) => {
                 this.isLoading = false;
@@ -401,7 +406,8 @@
                         "number_of_compare":this.compareNumber,
                         "page":this.pageOfCompares.current,
                         "compare_target":this.compareTarget,
-                        "filter_settings": {"conditions":this.clusterSearchConditions,"threshold":this.clusterThreshold}
+                        "filter_settings": {"conditions":this.clusterSearchConditions
+                        ,"threshold":this.clusterThreshold}
                     }
                  );
             },
