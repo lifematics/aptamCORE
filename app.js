@@ -165,10 +165,9 @@ app.on('ready', () => {
         if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず
             console.log("?????");
         }
-        console.log(args);
         if(args["cluster_id"]){
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
-                let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:false}
+                let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
                 analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                     console.log(data);
@@ -176,10 +175,10 @@ app.on('ready', () => {
                 });
             });
         }else{
-            let filterSettings = {'conditions':{'key':key, primary_only:false}
+            let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
-                console.log(data);
+                //console.log(data);
                 window.webContents.send('update-compare-one-view', { dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
             });
         }
@@ -314,6 +313,23 @@ app.on('ready', () => {
             window.webContents.send('set-venn-data', data);
         });
     });
+    ipcMain.on('write_to_file', (event, args) => {
+        dialog.showSaveDialog(null, {
+            properties: ['promptToCreate'],
+            title: 'Specify a output file',
+            defaultPath: '.',
+            filters: [
+                {name: 'Text File', extensions: ['txt']},
+            ]
+        }).then(
+            function(result) {
+                let filename = result.filePath;
+                if (filename) {
+                    writeToFile(filename,args["lines"]);
+                }
+            }
+        );
+    });
     ipcMain.on('export-cluster-data', (event, args) => {
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
@@ -445,7 +461,19 @@ function showAddDatasetDialog(startpos,filelabel,allowmulti,overwrite){
         }
     });
 }
-
+function writeToFile(filename,lines){
+    fs.open(filename, 'w', function(error, fd) {
+        if (error) {
+            throw error;
+        }
+        for(let ii = 0;ii < lines.length;ii++){
+            fs.writeSync(fd, lines[ii] + "\r\n");
+        }
+        fs.close(fd, (err) => {
+            if (err){throw err;}
+        });
+    });
+}
 function showOpenAnalysisDialog(){
     dialog.showOpenDialog(null, {
         properties: ['openFile'],

@@ -388,11 +388,13 @@
             loadCompareOne: function(seq) {//cluster の場合 null
                 //this.isLoading = true;
                 this.compareOneSeq = seq;
-                if(this.mode == "sequence" || (this.compareOneSeq == null && this.mode == "cluster")){
-                    ipcRenderer.send('load-compare-one', {"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
+                if(this.$refs.compareOneComponent){
+                    this.$refs.compareOneComponent.setTargetSequence(seq);
+                    if(this.mode == "sequence" || (this.compareOneSeq == null && this.mode == "cluster")){
+                        ipcRenderer.send('load-compare-one', {"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
+                    }
                 }
             },
-            
             changeCompareOneTarget: function(target){
                 this.compareOneTarget = target;
                 ipcRenderer.send('load-compare-one', {"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
