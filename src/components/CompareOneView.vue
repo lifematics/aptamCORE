@@ -56,7 +56,7 @@ export default {
     },
     methods: {
         changeCompareTargetProp: function() {
-            this.updateCompareView(this.dataSets,this.dataList,this.compareTarget);
+            this.$emit("changeCompareOneTarget",this.compareTarget);
         },
         exportAsCsv: function() {
             let filterSettings = {'conditions':{'key':this.targetSequence, primary_only:false}
@@ -74,6 +74,7 @@ export default {
         },
         updateCompareView: function(datasets,datalist,comparetarget) {
             const self = this;
+            self.compareTarget = comparetarget;
             self.dataSets = datasets;
             self.dataList = datalist;
             if(!comparetarget){

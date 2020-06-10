@@ -55,7 +55,8 @@
                     <th v-if="preferences.view.items.includes('t_ratio')">T Ratio</th>
                     <th v-if="preferences.view.items.includes('variable_distance')">Levenshtein Distance</th>
                 </tr>
-                <tr v-for="(sequence, index) in sequenceList" :key="index">
+                <tr v-for="(sequence, index) in sequenceList" :key="index" 
+                v-on:click="sequenceSelected(sequence.sequence[1],$event)">
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{sequence.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{sequence.name}}</td>
@@ -136,6 +137,9 @@ export default {
         exportAsCsv: function() {
             this.threshold['count'] = this.totalCount * this.threshold['ratio'] / 100.0;
             ipcRenderer.send('export-sequence-data', [this.dataSetId, this.clusterId, this.search_key, this.threshold]);
+        },
+        sequenceSelected: function(seq) {
+            this.$emit('loadCompareOne', seq);
         },
         searchSequencesThreshold: function() {
             let ddiv = document.getElementById("filter_seq_div");
