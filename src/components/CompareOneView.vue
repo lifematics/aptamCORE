@@ -133,11 +133,11 @@ export default {
                 if(targetSequence_check.length > 0){
                     targetSequence_check += "\n";
                 }
-                targetSequence_check += data.sequence+"";
                 let ttitle = this.targetSequence;
-                if(!ttitle){
+                if(!data.sequence && targetSequence_check.length == 0){
                     ttitle = "Not Found"
                 }
+                targetSequence_check += data.sequence+"";
                 let option = {
                     title: {
                         display: true,
