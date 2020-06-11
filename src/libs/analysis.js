@@ -1885,12 +1885,12 @@ class Analysis {
     exportClusters(dataSetId, filename, conditions ,clusterThresholdNumber, callback) {
         const self = this;
         self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
-            //let clusters = result.clusters;
             let ext = path.extname(filename);
             if (ext == '.csv') {
                 console.log(result["sequence_count"]);
                 self.exportAsCsv(filename, result, "cluster",callback);
             } else if (ext == '.fasta') {
+                let clusters = result.clusters;
                 self.exportAsFasta(filename, clusters, callback);
             }
         });
