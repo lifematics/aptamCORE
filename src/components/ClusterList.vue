@@ -68,7 +68,7 @@
                 </tr>
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
-                         v-on:click="clusterSelected(cluster.id, $event)">
+                         v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -136,6 +136,7 @@ export default {
     },
     data() {
         return {
+            targetSequence:null,
             conditions: {
                 key: '',
                 primary_only: true,
@@ -160,13 +161,16 @@ export default {
             let ddiv = document.getElementById(divid);
             ddiv.style["background-color"] = color_str;
         },
+        sequenceSelected(seq){
+            this.targetSequence = seq;
+        },
         changeSubFrame:function(){
             this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
-            this.$emit('loadCompareOne', null);
+            this.$emit('loadCompareOne', this.targetSequence);
         },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
-            this.$emit('loadCompareOne', null);
+            this.$emit('loadCompareOne',  this.targetSequence);
         },
         exportAsCsv: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);

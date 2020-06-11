@@ -61,7 +61,7 @@ export default {
         exportAsCsv: function() {
             let lines = [];
             let self = this;
-            lines.push(self.targetSequence);
+            lines.push(self.selectedSequence);
             lines.push("DataSet,Sequence Count,Total Count,Ratio(%)");
             for(let ii = 0;ii < self.dataSets.length;ii++){
                 lines.push(self.dataSets[ii].name+","
@@ -72,10 +72,10 @@ export default {
             ipcRenderer.send('write_to_file',{"lines":lines});
         },
         copySequence: function() {
-            clipboard.writeText(this.targetSequence);
+            clipboard.writeText(this.selectedSequence);
         },
-        setTargetSequence:function(seq){
-            this.targetSequence = seq;
+        setSelectedSequence:function(seq){
+            this.selectedSequence = seq;
         },
         updateCompareView: function(datasets,datalist,comparetarget) {
             const self = this;
@@ -112,7 +112,7 @@ export default {
                 dataSetNames.push(dataSet.name);
                 sequenceCountList.push(dataSet.accepted_cluster_sequences)
             });
-            let targetSequence_check ="";
+            let selectedSequence_check ="";
             self.dataList.forEach((data, dataIndex) => {
                 let dataEntryList = [];
                 dataSetIds.forEach((id, index) => {
@@ -130,14 +130,14 @@ export default {
                     id: 'graph-' + dataIndex,
                     datasets: dataEntryList,
                 };
-                if(targetSequence_check.length > 0){
-                    targetSequence_check += "\n";
+                if(selectedSequence_check.length > 0){
+                    selectedSequence_check += "\n";
                 }
-                let ttitle = this.targetSequence;
-                if(!data.sequence && targetSequence_check.length == 0){
+                let ttitle = this.selectedSequence;
+                if(!data.sequence && selectedSequence_check.length == 0){
                     ttitle = "Not Found"
                 }
-                targetSequence_check += data.sequence+"";
+                selectedSequence_check += data.sequence+"";
                 let option = {
                     title: {
                         display: true,
@@ -166,9 +166,9 @@ export default {
                 self.options.push(option);
             });
             if(self.compareTarget != "cluster_all"){
-                if(targetSequence_check != "undefined"){
-                    if(targetSequence_check != self.targetSequence){
-                        throw "error in code??\n"+targetSequence_check+"\n"+self.targetSequence+"?????";
+                if(selectedSequence_check != "undefined"){
+                    if(selectedSequence_check != self.selectedSequence){
+                        throw "error in code??\n"+selectedSequence_check+"\n"+self.selectedSequence+"?????";
                     }
                 }
             }

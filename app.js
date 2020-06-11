@@ -156,6 +156,7 @@ app.on('ready', () => {
     ipcMain.on('load-compare-one',(event,args) => {
         let dataSetId = args["dataset_id"];
         let clusterId = args["cluster_id"];
+        let selected_sequence = args["selected_sequence"];
         let key = args["key"];
         let listSize = 1;
         let threshold = 0.0;
@@ -171,7 +172,7 @@ app.on('ready', () => {
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
                 analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                     console.log(data);
-                    window.webContents.send('update-compare-one-view', { dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
+                    window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
                 });
             });
         }else{
@@ -179,7 +180,7 @@ app.on('ready', () => {
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                 //console.log(data);
-                window.webContents.send('update-compare-one-view', { dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
+                window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
             });
         }
     });

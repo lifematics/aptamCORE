@@ -278,6 +278,7 @@
             ipcRenderer.on('update-compare-one-view',(event, args) => {
                 if((this.clusterSubFrame == "compare" && this.mode == "cluster")
                 || (this.mode == "sequence")){
+                    this.$refs.compareOneComponent.setSelectedSequence(args['selected_sequence']);
                     this.$refs.compareOneComponent.updateCompareView(args['dataSets'],args['data'],this.compareOneTarget);
                 }
             });
@@ -385,14 +386,13 @@
                 ipcRenderer.send('load-sequences', [this.activeDataSet, this.activeCluster, this.sequenceSearchKey, this.preferences.view.list_size, this.pageOfSequences.current, threshold]);
             },
             
-            loadCompareOne: function(seq) {//cluster の場合 null
+            loadCompareOne: function(seq) {
                 //this.isLoading = true;
                 this.compareOneSeq = seq;
-                if(this.$refs.compareOneComponent){
-                    this.$refs.compareOneComponent.setTargetSequence(seq);
-                    if(this.mode == "sequence" || (this.compareOneSeq == null && this.mode == "cluster")){
-                        ipcRenderer.send('load-compare-one', {"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
-                    }
+                if(this.mode == "sequence"){
+                    ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
+                }else if (this.mode == "cluster"){
+                    ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":null,"target":this.compareOneTarget});
                 }
             },
             changeCompareOneTarget: function(target){
