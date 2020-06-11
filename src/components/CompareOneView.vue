@@ -21,7 +21,7 @@
 
 <script>
 const { clipboard } = window.require('electron');
-
+const { ipcRenderer } = window.require('electron');
 import CompareGraph from './CompareGraph.vue'
 
 export default {
@@ -56,24 +56,30 @@ export default {
     },
     methods: {
         changeCompareTargetProp: function() {
-            this.updateCompareView(this.dataSets,this.dataList,this.compareTarget);
+            this.$emit("changeCompareOneTarget",this.compareTarget);
         },
         exportAsCsv: function() {
-            let filterSettings = {'conditions':{'key':this.targetSequence, primary_only:false}
-                ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
-             this.$emit('exportCompareOneCSV',{
-                "dataset_id": null,//向こうで変える
-                "number_of_compare": 1,
-                "page": 1,
-                "compare_target": this.compareTarget,
-                "filter_settings": filterSettings
-            });
+            let lines = [];
+            let self = this;
+            lines.push(self.targetSequence);
+            lines.push("DataSet,Sequence Count,Total Count,Ratio(%)");
+            for(let ii = 0;ii < self.dataSets.length;ii++){
+                lines.push(self.dataSets[ii].name+","
+                +self.dataList[0].counts[ii]+","
+                +self.dataSets[ii].accepted_cluster_sequences+","
+                +(self.dataList[0].counts[ii]/self.dataSets[ii].accepted_cluster_sequences*100));
+            }
+            ipcRenderer.send('write_to_file',{"lines":lines});
         },
         copySequence: function() {
             clipboard.writeText(this.targetSequence);
         },
+        setTargetSequence:function(seq){
+            this.targetSequence = seq;
+        },
         updateCompareView: function(datasets,datalist,comparetarget) {
             const self = this;
+            self.compareTarget = comparetarget;
             self.dataSets = datasets;
             self.dataList = datalist;
             if(!comparetarget){
@@ -106,8 +112,7 @@ export default {
                 dataSetNames.push(dataSet.name);
                 sequenceCountList.push(dataSet.accepted_cluster_sequences)
             });
-            let graphIndex = 0;
-            self.targetSequence ="";
+            let targetSequence_check ="";
             self.dataList.forEach((data, dataIndex) => {
                 let dataEntryList = [];
                 dataSetIds.forEach((id, index) => {
@@ -125,15 +130,18 @@ export default {
                     id: 'graph-' + dataIndex,
                     datasets: dataEntryList,
                 };
-                if(self.targetSequence.length > 0){
-                    self.targetSequence += "\n";
+                if(targetSequence_check.length > 0){
+                    targetSequence_check += "\n";
                 }
-                self.targetSequence += data.sequence+"";
-
+                let ttitle = this.targetSequence;
+                if(!data.sequence && targetSequence_check.length == 0){
+                    ttitle = "Not Found"
+                }
+                targetSequence_check += data.sequence+"";
                 let option = {
                     title: {
                         display: true,
-                        text: graphIndex + ' : ' + data.sequence,
+                        text: ttitle,
                     },
                     legend: {
                         position: 'right',
@@ -156,8 +164,14 @@ export default {
                 };
                 self.chartData.push(item);
                 self.options.push(option);
-                ++graphIndex;
             });
+            if(self.compareTarget != "cluster_all"){
+                if(targetSequence_check != "undefined"){
+                    if(targetSequence_check != self.targetSequence){
+                        throw "error in code??\n"+targetSequence_check+"\n"+self.targetSequence+"?????";
+                    }
+                }
+            }
         },
     }
 }

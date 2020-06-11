@@ -162,9 +162,11 @@ export default {
         },
         changeSubFrame:function(){
             this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
+            this.$emit('loadCompareOne', null);
         },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
+            this.$emit('loadCompareOne', null);
         },
         exportAsCsv: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
