@@ -136,7 +136,7 @@ export default {
     },
     data() {
         return {
-            targetSequence:null,
+            selectedSequence:null,
             conditions: {
                 key: '',
                 primary_only: true,
@@ -162,15 +162,15 @@ export default {
             ddiv.style["background-color"] = color_str;
         },
         sequenceSelected(seq){
-            this.targetSequence = seq;
+            this.selectedSequence = seq;
         },
         changeSubFrame:function(){
             this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
-            this.$emit('loadCompareOne', this.targetSequence);
+            this.$emit('loadCompareOne', this.selectedSequence);
         },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
-            this.$emit('loadCompareOne',  this.targetSequence);
+            this.$emit('loadCompareOne',  this.selectedSequence);
         },
         exportAsCsv: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);

@@ -5,7 +5,7 @@
     <div class="CompareView">
         <div class="header-control container">
             <div class="row" id="compare_target_div" style="margin-top:5px">
-                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-on:change="changeCompareTargetProp" v-model="compareTarget" value="cluster_representative" checked> <label for="cluster_representative">Cluster Representatives</label> 
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-on:change="changeCompareTargetProp" v-model="compareTarget" value="cluster_representative" checked> <label for="radio_representative">Cluster Representatives</label> 
                 <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_cluster_all" v-on:change="changeCompareTargetProp"  v-model="compareTarget" value="cluster_all"> <label for="radio_cluster_all">Cluster Members</label> 
                 <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_sequences" v-on:change="changeCompareTargetProp"  v-model="compareTarget" value="sequences"> <label for="radio_sequences">Sequences</label> 
                 <button v-on:click="exportAsCsv" value="Export" style="margin-left:30px;">Export</button>
@@ -56,7 +56,7 @@ export default {
     },
     methods: {
         changeCompareTargetProp: function() {
-            this.$emit("changeCompareOneTarget",this.compareTarget);
+            this.$emit("changeCompareOneTarget",this.compareTarget,this.selectedSequence);
         },
         exportAsCsv: function() {
             let lines = [];

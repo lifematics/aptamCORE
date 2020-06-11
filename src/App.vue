@@ -395,9 +395,9 @@
                     ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":null,"target":this.compareOneTarget});
                 }
             },
-            changeCompareOneTarget: function(target){
+            changeCompareOneTarget: function(target,seq){
                 this.compareOneTarget = target;
-                ipcRenderer.send('load-compare-one', {"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
+                ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
             },
 
             getAllSequenceList: function() {
