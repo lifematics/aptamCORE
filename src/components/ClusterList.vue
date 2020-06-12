@@ -133,6 +133,7 @@ export default {
     },
     mounted() {
         this.updateBaseColorAll();
+        this.changeSubFrame();
     },
     updated() {
         this.updateBaseColorAll();

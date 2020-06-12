@@ -67,6 +67,10 @@
         exportSettings: Object,
       }
     },
+    
+    destroyed: function(){
+      ipcRenderer.removeAllListeners('set-venn-data');
+    },
     mounted() {
       const self = this;
       ipcRenderer.on('set-venn-data', function(event, args) {
