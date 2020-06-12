@@ -101,6 +101,7 @@ export default {
         sequenceList: Array,
         config: Object,
         page: Object,
+        mode:String,
         sequencesThreshold: Object,
     },
     created() {
@@ -140,7 +141,9 @@ export default {
             ipcRenderer.send('export-sequence-data', [this.dataSetId, this.clusterId, this.search_key, this.threshold]);
         },
         sequenceSelected: function(seq) {
-            this.$emit('loadCompareOne', seq);
+            if(this.mode == "sequence"){
+                this.$emit('loadCompareOne', seq);
+            }
         },
         searchSequencesThreshold: function() {
             let ddiv = document.getElementById("filter_seq_div");

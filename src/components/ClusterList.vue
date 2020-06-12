@@ -169,11 +169,15 @@ export default {
         },
         changeSubFrame:function(){
             this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
-            this.$emit('loadCompareOne', this.selectedSequence);
+            if(this.clusterSubFrame_This == "compare"){
+                this.$emit('loadCompareOne', this.selectedSequence);
+            }
         },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
-            this.$emit('loadCompareOne',  this.selectedSequence);
+            if(this.clusterSubFrame_This == "compare"){
+                this.$emit('loadCompareOne',  this.selectedSequence);
+            }
         },
         exportAsCsv: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);

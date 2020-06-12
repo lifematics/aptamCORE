@@ -17,13 +17,13 @@
                         <multipane-resizer></multipane-resizer>
                         <div :style="{  height: '400px', overflow: 'scroll' }">
                             <compare-one-view  ref="compareOneComponent"  v-if="clusterSubFrame == 'compare'" v-on:exportCompareOneCSV="exportCompareOneCSV" v-on:changeCompareOneTarget="changeCompareOneTarget"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight"></compare-one-view>
-                            <sequence-list  v-if="clusterSubFrame == 'member'" v-on:loadCompareOne="loadCompareOne" :config="config" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
+                            <sequence-list  v-if="clusterSubFrame == 'member'" v-on:loadCompareOne="loadCompareOne" :config="config" :mode="mode" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
                     </multipane>
                     <multipane layout="horizontal" v-if="mode == 'sequence'">
                         <div :style="{ height: '400px', overflow: 'scroll' }">
-                        <sequence-list :preferences="preferences"  v-on:clusterChanged="clusterChanged" v-on:loadCompareOne="loadCompareOne" :totalCount="allSequenceCount" :sequenceList="allSequenceList" :dataSetId="activeDataSet" :clusterId=null :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :aThreshold="aThreshold" :cThreshold="cThreshold" :tThreshold="tThreshold" :gThreshold="gThreshold" :clusterThreshold="clusterThreshold" :page="pageOfAllSequences" v-on:nextPage="nextAllSequencePage" v-on:prevPage="prevAllSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
+                        <sequence-list :preferences="preferences"  v-on:clusterChanged="clusterChanged" v-on:loadCompareOne="loadCompareOne" :mode="mode" :totalCount="allSequenceCount" :sequenceList="allSequenceList" :dataSetId="activeDataSet" :clusterId=null :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :aThreshold="aThreshold" :cThreshold="cThreshold" :tThreshold="tThreshold" :gThreshold="gThreshold" :clusterThreshold="clusterThreshold" :page="pageOfAllSequences" v-on:nextPage="nextAllSequencePage" v-on:prevPage="prevAllSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
                         <div :style="{  height: '400px', overflow: 'scroll' }">
@@ -149,6 +149,13 @@
                 handler: function(val,){
                     if(val == "compare"){
                         this.getSequenceList();
+                    }
+                }
+            },
+            mode:{
+                handler:function(){
+                    if(this.$refs.compareOneComponent){
+                        this.$refs.compareOneComponent.setSelectedSequence(null);
                     }
                 }
             }

@@ -59,8 +59,11 @@ export default {
             this.$emit("changeCompareOneTarget",this.compareTarget,this.selectedSequence);
         },
         exportAsCsv: function() {
-            let lines = [];
             let self = this;
+            let lines = [];
+            if(!self.selectedSequence){
+                return;
+            }
             lines.push(self.selectedSequence);
             lines.push("DataSet,Sequence Count,Total Count,Ratio(%)");
             for(let ii = 0;ii < self.dataSets.length;ii++){
@@ -76,9 +79,17 @@ export default {
         },
         setSelectedSequence:function(seq){
             this.selectedSequence = seq;
+            if(!seq){//seq が null の場合は初期化の命令
+                this.updateCompareView(null,null,null);
+            }
         },
         updateCompareView: function(datasets,datalist,comparetarget) {
             const self = this;
+            if(!self.selectedSequence){
+                self.chartData = [];
+                self.options = [];
+                return;
+            }
             self.compareTarget = comparetarget;
             self.dataSets = datasets;
             self.dataList = datalist;
