@@ -338,7 +338,7 @@ app.on('ready', () => {
             defaultPath: '.',
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
-                {name: 'Fasta File', extensions: ['fasta']},
+                {name: 'Fasta File for SeqLogo', extensions: ['fasta']},
             ]
         }).then(function(result) {
             let filename = result.filePath;
@@ -359,7 +359,7 @@ app.on('ready', () => {
             defaultPath: '.',
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
-                {name: 'Fasta File', extensions: ['fasta']},
+                {name: 'asta File for SeqLogo', extensions: ['fasta']},
             ]
         }).then(function(result) {
             let filename = result.filePath;
