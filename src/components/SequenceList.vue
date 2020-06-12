@@ -6,6 +6,7 @@
         <div>
             <div class="row header-control">
                 <div class="col-sm-4">
+                    <h2 style="margin-right:20px">Sequences</h2>
                 </div>
                 <div class="col-sm-4">
                     <div class="page-control">

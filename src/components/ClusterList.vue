@@ -6,9 +6,12 @@
         <div>
             <div class="row header-control">
                 <div class="col-sm-4">
-                    <div class="row" id="subframediv" style="margin-top:5px">
+                    <div class="row" id="subframediv">
+                        <h2>Families</h2>
+                        <span style="margin-top:10px">
                         <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_member" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_member">Member</label> 
                         <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_compare" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_compare">Compare</label> 
+                        </span>
                     </div> 
                 </div>
                 <div class="col-sm-4">
