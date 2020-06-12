@@ -1749,7 +1749,8 @@ class Analysis {
                 let preferences = that.appPreferences.get();
                 let tags = [];
                 if(datatype == "cluster") {
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1763,7 +1764,8 @@ class Analysis {
                     'g_ratio',
                     't_ratio'];
                 }else if(datatype == "family_sequence"){
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1780,7 +1782,8 @@ class Analysis {
                     ];
                 }else if (datatype== "sequence"){
 
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1830,7 +1833,7 @@ class Analysis {
                     };
 
                     if(datatype == "cluster"){
-                        dats["ngs_id"] = ddat.sequence_name;
+                        dats["ngs_id"] = ddat.seq_name;
                     }else{
                         dats["ngs_id"] = ddat.name;
                     }
