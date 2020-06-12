@@ -75,7 +75,9 @@ export default {
             ipcRenderer.send('write_to_file',{"lines":lines});
         },
         copySequence: function() {
-            clipboard.writeText(this.selectedSequence);
+            if(this.selectedSequence){
+                clipboard.writeText(this.selectedSequence);
+            }
         },
         setSelectedSequence:function(seq){
             this.selectedSequence = seq;

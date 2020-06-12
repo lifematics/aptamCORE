@@ -127,7 +127,11 @@ export default {
         copySequence: function(event) {
             let index = event.target.name;
             let option = this.options[index];
-            clipboard.writeText(option.title.text);
+            if(option){
+                clipboard.writeText(option.title.text);
+            }else{
+                clipboard.writeText("undefined");
+            }
         },
         loadCompareData: function() {
             if (this.numberOfCompare > 0) {
