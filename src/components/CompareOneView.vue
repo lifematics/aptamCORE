@@ -68,9 +68,9 @@ export default {
             lines.push("DataSet,Sequence Count,Total Count,Ratio(%)");
             for(let ii = 0;ii < self.dataSets.length;ii++){
                 lines.push(self.dataSets[ii].name+","
-                +self.dataList[0].counts[ii]+","
+                +self.dataList[0].counts[self.dataSets[ii].id]+","
                 +self.dataSets[ii].accepted_cluster_sequences+","
-                +(self.dataList[0].counts[ii]/self.dataSets[ii].accepted_cluster_sequences*100));
+                +(self.dataList[0].counts[self.dataSets[ii].id]/self.dataSets[ii].accepted_cluster_sequences*100));
             }
             ipcRenderer.send('write_to_file',{"lines":lines});
         },
