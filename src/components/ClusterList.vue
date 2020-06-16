@@ -6,9 +6,12 @@
         <div>
             <div class="row header-control">
                 <div class="col-sm-4">
-                    <div class="row" id="subframediv" style="margin-top:5px">
+                    <div class="row" id="subframediv">
+                        <h2>Families</h2>
+                        <span style="margin-top:10px">
                         <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_member" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_member">Member</label> 
                         <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_compare" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_compare">Compare</label> 
+                        </span>
                     </div> 
                 </div>
                 <div class="col-sm-4">
@@ -68,7 +71,7 @@
                 </tr>
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
-                         v-on:click="clusterSelected(cluster.id, $event)">
+                         v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -130,12 +133,14 @@ export default {
     },
     mounted() {
         this.updateBaseColorAll();
+        this.changeSubFrame();
     },
     updated() {
         this.updateBaseColorAll();
     },
     data() {
         return {
+            selectedSequence:null,
             conditions: {
                 key: '',
                 primary_only: true,
@@ -160,13 +165,20 @@ export default {
             let ddiv = document.getElementById(divid);
             ddiv.style["background-color"] = color_str;
         },
+        sequenceSelected(seq){
+            this.selectedSequence = seq;
+        },
         changeSubFrame:function(){
             this.$emit('changeClusterSubFrame',this.clusterSubFrame_This);
-            this.$emit('loadCompareOne', null);
+            if(this.clusterSubFrame_This == "compare"){
+                this.$emit('loadCompareOne', this.selectedSequence);
+            }
         },
         clusterSelected: function(clusterId) {
             this.$emit('clusterChanged', clusterId);
-            this.$emit('loadCompareOne', null);
+            if(this.clusterSubFrame_This == "compare"){
+                this.$emit('loadCompareOne',  this.selectedSequence);
+            }
         },
         exportAsCsv: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);

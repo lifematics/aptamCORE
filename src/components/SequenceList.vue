@@ -6,6 +6,7 @@
         <div>
             <div class="row header-control">
                 <div class="col-sm-4">
+                    <h2 style="margin-right:20px">Sequences</h2>
                 </div>
                 <div class="col-sm-4">
                     <div class="page-control">
@@ -100,6 +101,7 @@ export default {
         sequenceList: Array,
         config: Object,
         page: Object,
+        mode:String,
         sequencesThreshold: Object,
     },
     created() {
@@ -139,7 +141,9 @@ export default {
             ipcRenderer.send('export-sequence-data', [this.dataSetId, this.clusterId, this.search_key, this.threshold]);
         },
         sequenceSelected: function(seq) {
-            this.$emit('loadCompareOne', seq);
+            if(this.mode == "sequence"){
+                this.$emit('loadCompareOne', seq);
+            }
         },
         searchSequencesThreshold: function() {
             let ddiv = document.getElementById("filter_seq_div");

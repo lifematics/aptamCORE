@@ -1749,7 +1749,8 @@ class Analysis {
                 let preferences = that.appPreferences.get();
                 let tags = [];
                 if(datatype == "cluster") {
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1763,7 +1764,8 @@ class Analysis {
                     'g_ratio',
                     't_ratio'];
                 }else if(datatype == "family_sequence"){
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1780,7 +1782,8 @@ class Analysis {
                     ];
                 }else if (datatype== "sequence"){
 
-                    tags = ['id',
+                    tags = [
+                        'id',
                     'ngs_id',
                     'head',
                     'variable',
@@ -1830,7 +1833,7 @@ class Analysis {
                     };
 
                     if(datatype == "cluster"){
-                        dats["ngs_id"] = ddat.sequence_name;
+                        dats["ngs_id"] = ddat.seq_name;
                     }else{
                         dats["ngs_id"] = ddat.name;
                     }
@@ -1885,12 +1888,12 @@ class Analysis {
     exportClusters(dataSetId, filename, conditions ,clusterThresholdNumber, callback) {
         const self = this;
         self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
-            //let clusters = result.clusters;
             let ext = path.extname(filename);
             if (ext == '.csv') {
                 console.log(result["sequence_count"]);
                 self.exportAsCsv(filename, result, "cluster",callback);
             } else if (ext == '.fasta') {
+                let clusters = result.clusters;
                 self.exportAsFasta(filename, clusters, callback);
             }
         });
