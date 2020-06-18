@@ -83,11 +83,7 @@ app.on('ready', () => {
         appPreferences = new AppPreferences(false);
     }
     window.webContents.on('did-finish-load', function() {
-        if(appPreferences.get()["notification"]){
-            window.webContents.send('hasLicense', [true]);
-        }else{
-            window.webContents.send('hasLicense', [false]);
-        }
+        window.webContents.send('hasLicense', [appPreferences.hasLicense]);
     });
     appPreferences.setListener(function(preferences) {
         window.webContents.send('preferencesChanged', preferences);
@@ -243,10 +239,12 @@ app.on('ready', () => {
                 }
                 window.webContents.send('start-analysis');
                 let preferences = appPreferences.get();
-                if(preferences['notification']){
-                    if(preferences['notification']['mailgun_api_key']){
-                        if(preferences['notification']['mailgun_api_key'].length > 0){
-                            analysis.setNotificationSettings(preferences['notification']['mailgun_api_key'], preferences['notification']['mailgun_domain']);
+                if(appPreferences.hasLicense){
+                    if(preferences['notification']){
+                        if(preferences['notification']['mailgun_api_key']){
+                            if(preferences['notification']['mailgun_api_key'].length > 0){
+                                analysis.setNotificationSettings(preferences['notification']['mailgun_api_key'], preferences['notification']['mailgun_domain']);
+                            }
                         }
                     }
                 }
