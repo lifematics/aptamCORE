@@ -82,7 +82,13 @@ app.on('ready', () => {
     }else{
         appPreferences = new AppPreferences(false);
     }
-
+    window.webContents.on('did-finish-load', function() {
+        if(appPreferences.get()["notification"]){
+            window.webContents.send('hasLicense', [true]);
+        }else{
+            window.webContents.send('hasLicense', [false]);
+        }
+    });
     appPreferences.setListener(function(preferences) {
         window.webContents.send('preferencesChanged', preferences);
     });

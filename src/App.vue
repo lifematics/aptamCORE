@@ -8,7 +8,7 @@
 
             <div class="rightPanel" >
                 <div class="content">
-                    <config-view v-if="mode == 'config'" :config="config" :presets="presets" v-on:configChanged="configChanged"></config-view>
+                    <config-view v-if="mode == 'config'" :config="config" :hasLicense="hasLicense" :presets="presets" v-on:configChanged="configChanged"></config-view>
                     <info-view v-if="mode == 'info'" :config="config" :info="info" ></info-view>
                     <multipane layout="horizontal" v-if="mode == 'cluster'">
                         <div :style="{ height: '400px', overflow: 'scroll' }">
@@ -125,6 +125,7 @@
                 compareOneHeight: 300,
                 compareOneSeq:null,
                 compareOneTarget:'cluster_representative',
+                hasLicense:false,
 
                 compareNumber: 5,
                 clusterSubFrame:"member",
@@ -268,6 +269,9 @@
                 this.isLoading = false;
             });
             ipcRenderer.on('showSettingsDialog', () => {
+            });
+            ipcRenderer.on('hasLicense', (e,args) => {
+                this.hasLicense = args[0];
             });
             ipcRenderer.on('set-search-cluster-threshold', (e,arg) => {
                 this.searchClusterThreshold(arg['conditions'],arg['threshold']);

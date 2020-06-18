@@ -88,15 +88,16 @@
             </tr>
         </table>
 
-        <hr/>
-        <h5>Mail Notification Settings:</h5>
-        <table class="settings">
-            <tr class="row">
-                <th>Mail Address</th>
-                <td><input type="text" name="mail_address" v-model="$data.mail_address"/></td>
-            </tr>
-        </table>
-
+        <div v-if="hasLicense">
+            <hr/>
+            <h5>Mail Notification Settings:</h5>
+            <table class="settings">
+                <tr class="row">
+                    <th>Mail Address</th>
+                    <td><input type="text" name="mail_address" v-model="$data.mail_address"/></td>
+                </tr>
+            </table>
+        </div>
     </div>
 </template>
 
@@ -106,6 +107,7 @@
     export default {
         name: 'ConfigView',
         props: {
+            hasLicense: Boolean,
             config: Object,
             presets: Object,
         },
