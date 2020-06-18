@@ -254,6 +254,7 @@ class AppPreferences {
                 },
             );    
         }
+        this.hasLicense = has_license;
         this.preferences = new ElectronPreferences(preferences_hs);
     }
     show() {
