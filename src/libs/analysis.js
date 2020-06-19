@@ -444,9 +444,9 @@ class Analysis {
 
         let command = "";
         if(config.single_or_paired == "paired"){
-            command = this.base + MERGER_CMD +' '+MERGER_ARGS+' '+ ' -d '+tmpdir+ ' -o '+outfileprefix+' '+input1+' '+input2;
+            command = '"'+this.base + MERGER_CMD +'" '+MERGER_ARGS+' '+ ' -d "'+tmpdir+ '" -o "'+outfileprefix+'" "'+input1+'" "'+input2+'"';
         }else if(config.single_or_paired == "interleaved_paired"){
-            command = this.base + MERGER_CMD +' '+MERGER_ARGS+' '+ ' -d '+tmpdir+ ' --interleaved-input -o '+outfileprefix+' '+input1;
+            command = '"'+this.base + MERGER_CMD +'" '+MERGER_ARGS+' '+ ' -d "'+tmpdir+ '" --interleaved-input -o "'+outfileprefix+'" "'+input1+'"';
         }else{
             recordLog(config.single_or_paired+" is not a valid option.");
             throw config.single_or_paired+" is not a valid option.";
@@ -468,7 +468,7 @@ class Analysis {
         let self = this;
         let full = path.join(this.tempDir, path.basename(input) + '.filtered.full.fasta');
         let variable = path.join(this.tempDir, path.basename(input) + '.filtered.variable.fasta');
-        let command = this.base + FILTER_CMD + ' '
+        let command = '"'+this.base + FILTER_CMD + '" '
             + ' --input "' + input + '" --full "' + full + '" --variable "' + variable + '"'
             + ' --quality ' + config.quality_criteria + ' --criteria ' + config.number_of_low_quality_elements
             + ' --min ' + config.min_variable_length + ' --max ' + config.max_variable_length
@@ -488,7 +488,7 @@ class Analysis {
     clusterSequences(config, input, callback) {
         let clusters = input + '.clusters';
         //let command =  this.base +  CLUSTER_CMD + ' -L/usr/local/Cellar/gcc@6/6.5.0_4/lib/gcc/6' + ' ' + CLUSTER_ARGS
-        let command =  this.base +  CLUSTER_CMD + ' ' + CLUSTER_ARGS
+        let command =  '"'+this.base +  CLUSTER_CMD + '" ' + CLUSTER_ARGS
             + ' -i ' + input + ' -o ' + clusters
             + ' -c ' + (config.clustering_criteria / 100.0);
         if(config.cluster_complementary_sequences){
@@ -1704,7 +1704,7 @@ class Analysis {
         self.getDataSets(function(dataSets) {
             self.exportDataSetAsFasta(dataSets, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
-                let command = self.base + VENN_CMD + ' --command summary --include "' + files.join('" --include "') + '"';
+                let command = '"'+self.base + VENN_CMD + '" --command summary --include "' + files.join('" --include "') + '"';
                 recordLog(command);
                 exec(command, function(error, stdout, stderr) {
                     let vennData = eval(stdout);
@@ -1924,7 +1924,7 @@ class Analysis {
             self.exportDataSetAsFasta(dataSets, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
                 let format = path.extname(filename).substr(1);
-                let command = self.base + VENN_CMD + ' --command ' + format + ' --include "' + files.join('" --include "') + '"';
+                let command = '"'+self.base + VENN_CMD + '" --command ' + format + ' --include "' + files.join('" --include "') + '"';
                 recordLog(command);
                 exec(command, function(error, stdout, stderr) {
                     if (error) {
@@ -1952,7 +1952,7 @@ class Analysis {
                     return list;
                 }, {'includes': [], 'excludes': []});
                 let format = path.extname(filename).substr(1);
-                let command = self.base + VENN_CMD + ' --command ' + format;
+                let command = '"'+self.base + VENN_CMD + '" --command ' + format;
                 command += ' --include "' + config['includes'].join('" --include "') + '"';
                 command += ' --exclude "' + config['excludes'].join('" --exclude "') + '"';
                 recordLog(command);

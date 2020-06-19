@@ -526,6 +526,7 @@ function createMenu() {
                 },
             ]
         },
+        /*
         {
             label: "Edit",
             submenu: [
@@ -538,6 +539,7 @@ function createMenu() {
                 { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
             ]
         },
+        */
     ]
     if (process.platform === 'darwin') {
         template.unshift({
