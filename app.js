@@ -95,7 +95,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    window.webContents.openDevTools()
+    //window.webContents.openDevTools()
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -526,6 +526,7 @@ function createMenu() {
                 },
             ]
         },
+        /*
         {
             label: "Edit",
             submenu: [
@@ -538,6 +539,7 @@ function createMenu() {
                 { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
             ]
         },
+        */
     ]
     if (process.platform === 'darwin') {
         template.unshift({

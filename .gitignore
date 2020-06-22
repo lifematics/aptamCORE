@@ -2,8 +2,9 @@
 node_modules
 /dist
 /build
-*-win32-x64
-*-darwin-x64
+
+# packaged
+/aptamCORE*
 
 # local env files
 .env.local
