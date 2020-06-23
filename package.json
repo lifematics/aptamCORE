@@ -10,7 +10,7 @@
     "lint": "vue-cli-service lint",
     "debug": "cross-env NODE_ENV=debug ELECTRON_ENABLE_LOGGING=true ./node_modules/.bin/electron .",
     "package:win": "electron-packager . aptamCORE --platform=win32 --arch=x64 --overwrite --ignore \"^/tools\" --ignore \"^/wiki\" --asar && mkdir aptamCORE-win32-x64\\tools && copy tools\\* aptamCORE-win32-x64\\tools && copy LICENSE aptamCORE-win32-x64\\LICENSE.aptamCORE",
-    "clean": "rm -rf dist *-darwin-x64 *-win32-x64",
+    "clean": "rm -rf dist *-win32-x64",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
