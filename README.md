@@ -30,7 +30,7 @@ npm run package:win
 ```
 
 ### Usage
-Please see the user manual (Japanese).
+Please see the [wiki](https://github.com/lifematics/aptamCORE/wiki) (Japanese).
 
 ### Third party applications
 [FLASH2](https://github.com/dstreett/FLASH2)  
