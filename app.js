@@ -82,7 +82,9 @@ app.on('ready', () => {
     }else{
         appPreferences = new AppPreferences(false);
     }
-
+    window.webContents.on('did-finish-load', function() {
+        window.webContents.send('hasLicense', [appPreferences.hasLicense]);
+    });
     appPreferences.setListener(function(preferences) {
         window.webContents.send('preferencesChanged', preferences);
     });
@@ -93,7 +95,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    // window.webContents.openDevTools()
+    //window.webContents.openDevTools()
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -121,10 +123,8 @@ app.on('ready', () => {
         //writeFileSync なので問題ないはず
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
-    
-    //デバッグ中
-    console.log(statisticData.get());
     analysis.setStatisticDataRecorder(statisticData);
+    analysis.setPreferences(appPreferences);
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
     });
@@ -133,7 +133,7 @@ app.on('ready', () => {
         let searchConditions = args[1];
         let listSize = args[2];
         let page = args[3];
-        let threshold = args[4]
+        let threshold = args[4];
         analysis.getClusters(dataSetId, searchConditions, listSize, page, threshold, (result) => {
             window.webContents.send('clusterListChanged', result);
         });
@@ -147,12 +147,43 @@ app.on('ready', () => {
         let threshold = args[5];
         if (args[1] === null) {
 	        analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
-	            window.webContents.send('allSequenceListChanged', result);
+                window.webContents.send('allSequenceListChanged', result);
 	        });
         } else {
 	        analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
-	            window.webContents.send('sequenceListChanged', result);
+                window.webContents.send('sequenceListChanged', result);
 	        });
+        }
+    });
+    ipcMain.on('load-compare-one',(event,args) => {
+        let dataSetId = args["dataset_id"];
+        let clusterId = args["cluster_id"];
+        let selected_sequence = args["selected_sequence"];
+        let key = args["key"];
+        let listSize = 1;
+        let threshold = 0.0;
+        let numberOfCompare = 1;
+        let page = 1;
+        let compareTarget = args["target"];
+        if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず
+            console.log("?????");
+        }
+        if(args["cluster_id"]){
+            analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
+                let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
+                ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
+                analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
+                    console.log(data);
+                    window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
+                });
+            });
+        }else{
+            let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
+            ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
+            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
+                //console.log(data);
+                window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
+            });
         }
     });
     ipcMain.on('load-all-sequences', (event, args) => {
@@ -173,8 +204,6 @@ app.on('ready', () => {
             });
         });
     });
-    
-    
     ipcMain.on('analyze', (event, args) => {
         if(fastqList.length == 0){
             return;
@@ -210,10 +239,12 @@ app.on('ready', () => {
                 }
                 window.webContents.send('start-analysis');
                 let preferences = appPreferences.get();
-                if(preferences['notification']){
-                    if(preferences['notification']['mailgun_api_key']){
-                        if(preferences['notification']['mailgun_api_key'].length > 0){
-                            analysis.setNotificationSettings(preferences['notification']['mailgun_api_key'], preferences['notification']['mailgun_domain']);
+                if(appPreferences.hasLicense){
+                    if(preferences['notification']){
+                        if(preferences['notification']['mailgun_api_key']){
+                            if(preferences['notification']['mailgun_api_key'].length > 0){
+                                analysis.setNotificationSettings(preferences['notification']['mailgun_api_key'], preferences['notification']['mailgun_domain']);
+                            }
                         }
                     }
                 }
@@ -224,8 +255,7 @@ app.on('ready', () => {
                 });
             });
         };
-
-        //全 FASTQ に含まれる配列数をカウントする
+        //全 FASTQ (forward のみ)に含まれる配列数をカウントする
         let flist=[kfunc];
         for(let kk = 1;kk < fastqList.length;kk++){
             if(fastqList[kk]["file1"].length > 0){
@@ -250,21 +280,23 @@ app.on('ready', () => {
         });
     });
     ipcMain.on('load-compare-data', (event, args) => {
-        let dataSetId = args[0];
-        let numberOfCompare = args[1];
-        let page = args[2];
-        let check_family_members = args[3];
-        analysis.getDataSetClusterCount(dataSetId, null,null , function(count) {//ページ数表示とかのために数を数えるだけ
-            analysis.getCompareData(dataSetId, numberOfCompare, page, check_family_members,function(dataSets, data) {
+        let dataSetId = args["dataset_id"];
+        let numberOfCompare = args["number_of_compare"];
+        let page = args["page"];
+        let compareTarget = args["compare_target"];
+        let filterSettings = args["filter_settings"];
+        analysis.getDataSetClusterCount(dataSetId, filterSettings["conditions"],filterSettings["threshold"] , function(count) {
+            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
                 window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: count, page: page, size: numberOfCompare });
             });
         })
     });
     ipcMain.on('export-compare-data', (event, args) => {
-        let dataSetId = args[0];
-        let numberOfCompare = args[1];
-        let page = args[2];
-        let check_family_members = args[3];
+        let dataSetId = args["dataset_id"];
+        let numberOfCompare = args["number_of_compare"];
+        let page = args["page"];
+        let compareTarget = args["compare_target"];
+        let filterSettings = args["filter_settings"];
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
             title: 'Specify a output file',
@@ -274,15 +306,34 @@ app.on('ready', () => {
             ]
         }).then(function(result) {
             let filename = result.filePath;
-            analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, check_family_members, function () {
-                window.webContents.send('finish-export');
-            });
+            if (filename) {
+                analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget,filterSettings, function () {
+                    window.webContents.send('finish-export');
+                });
+            }
         })
     });
     ipcMain.on('get-venn-data', (event, args) => {
         analysis.getVennData(function(data) {
             window.webContents.send('set-venn-data', data);
         });
+    });
+    ipcMain.on('write_to_file', (event, args) => {
+        dialog.showSaveDialog(null, {
+            properties: ['promptToCreate'],
+            title: 'Specify a output file',
+            defaultPath: '.',
+            filters: [
+                {name: 'Text File', extensions: ['txt']},
+            ]
+        }).then(
+            function(result) {
+                let filename = result.filePath;
+                if (filename) {
+                    writeToFile(filename,args["lines"]);
+                }
+            }
+        );
     });
     ipcMain.on('export-cluster-data', (event, args) => {
         dialog.showSaveDialog(null, {
@@ -291,7 +342,7 @@ app.on('ready', () => {
             defaultPath: '.',
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
-                {name: 'Fasta File', extensions: ['fasta']},
+                {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
             ]
         }).then(function(result) {
             let filename = result.filePath;
@@ -312,7 +363,7 @@ app.on('ready', () => {
             defaultPath: '.',
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
-                {name: 'Fasta File', extensions: ['fasta']},
+                {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
             ]
         }).then(function(result) {
             let filename = result.filePath;
@@ -370,7 +421,6 @@ app.on('ready', () => {
         showOpenAnalysisDialog();
     });
 });
-
 function showNewAnalysisDialog(){
     dialog.showSaveDialog(null, {
         properties: ['promptToCreate'],
@@ -416,7 +466,19 @@ function showAddDatasetDialog(startpos,filelabel,allowmulti,overwrite){
         }
     });
 }
-
+function writeToFile(filename,lines){
+    fs.open(filename, 'w', function(error, fd) {
+        if (error) {
+            throw error;
+        }
+        for(let ii = 0;ii < lines.length;ii++){
+            fs.writeSync(fd, lines[ii] + "\r\n");
+        }
+        fs.close(fd, (err) => {
+            if (err){throw err;}
+        });
+    });
+}
 function showOpenAnalysisDialog(){
     dialog.showOpenDialog(null, {
         properties: ['openFile'],
@@ -464,6 +526,7 @@ function createMenu() {
                 },
             ]
         },
+        /*
         {
             label: "Edit",
             submenu: [
@@ -476,6 +539,7 @@ function createMenu() {
                 { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
             ]
         },
+        */
     ]
     if (process.platform === 'darwin') {
         template.unshift({
