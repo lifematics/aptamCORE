@@ -37,12 +37,14 @@ class AnalysisPresets {
     checkOldData(){//次バージョンでは削除の予定
         this.loadDefault();
         let pathnames = [];
+        /*
         if(RegExp('presets\.json$').test(this.path)){
             pathnames = ["Sequence Analyzer","Sequence Family Tracer","aptamCORE"];
         }else{
             pathnames = ["aptamCORE"];
         }
-        
+        */
+        pathnames = ["aptamCORE"];
         for(let ii = 0;ii < pathnames.length;ii++){
             let ffpath = this.path.replace(/aptamCORE/,pathnames[ii]);
             if(fs.existsSync(ffpath)){
@@ -91,6 +93,16 @@ class AnalysisPresets {
         this.presets[name] = preset;
         let jsonStr = JSON.stringify(this.presets, null, '  ');
         fs.writeFileSync(this.path, jsonStr);
+    }
+
+    remove(name){
+        if(name in this.presets){
+            delete this.presets[name];
+            let jsonStr = JSON.stringify(this.presets, null, '  ');
+            fs.writeFileSync(this.path, jsonStr);
+        }else{
+            console.log(name+" was not found in presets.");
+        }
     }
 
     get() {

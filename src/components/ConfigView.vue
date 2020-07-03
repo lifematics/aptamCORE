@@ -19,7 +19,8 @@
             <select id="config_selector" name="configurations" v-model="$data.selected_preset">
                 <option v-for="name in Object.keys(presets)" :key="name">{{ name }}</option>
             </select>
-            <button @click="onLoadPresets">Load</button>
+            <button @click="onLoadPresets">Load Preset</button>
+            <button @click="onRemovePreset">Remove Preset</button>
         </div>
 
         <hr/>
@@ -31,9 +32,7 @@
         </div>
 
         <h5>Filter Settings:</h5>
-
         <table class="settings">
-
             <tr class="row">
                 <th>Quality Criteria</th>
                 <td><input type="text" name="quality_criteria" v-model="$data.quality_criteria"/></td>
@@ -66,13 +65,11 @@
                 <th>Maximum Tail Sequence Error</th>
                 <td><input type="text" name="number_of_tail_primer_errors" v-model="$data.number_of_tail_primer_errors"/></td>
             </tr>
-
         </table>
 
         <hr/>
 
         <h5>Clustering Settings:</h5>
-
         <table class="settings">
             <tr class="row">
                 <th>Similarity Criteria</th>
@@ -87,7 +84,6 @@
                 <td><input type="checkbox" name="cluster_complementary_sequences" v-model="$data.cluster_complementary_sequences"/></td>
             </tr>
         </table>
-
         <div v-if="hasLicense">
             <hr/>
             <h5>Mail Notification Settings:</h5>
@@ -273,6 +269,7 @@
                 event.preventDefault();
             },
             fastqDrop(event,targetpos){
+                //event.dataTransfer.getData("text") 内の文字列および targetpos が
                 //<List 内 インデクス>;<file1 もしくは file2>
                 //となっている必要がある
                 let positionTag_start = event.dataTransfer.getData("text");
@@ -518,6 +515,10 @@
             },
             onLoadPresets: function () {
                 let preset = this.presets[this.selected_preset];
+                if(!preset){
+                    this.validateFastqList();
+                    return;
+                }
                 this.preset_name = this.selected_preset;
                 
                 //新パラメータ
@@ -535,6 +536,16 @@
                 this.$emit('configChanged', this._config);
                 this.validateFastqList();
             },
+
+            onRemovePreset: function () {
+                //remove 後はリストから selected_preset が消えるので、挙動について確証が持てない。
+                //とりあえず今のところは remove 直後の selected_preset は remove された preset の名前になっている。
+                //同じ名前を Save As Preset すると、表示領域に直ちに現れる。
+                //つまりコンボボックスは selected_preset を選択しているつもりになっている。
+                //仕様が変わるとエラーになるかもしれない。
+                ipcRenderer.send('removePreset', [this.selected_preset]);
+            },
+
             loadDefaultPreset: function () {
                 let that = this;
                 if("default" in that.presets){
@@ -549,7 +560,8 @@
             },
             onSavePreset: function () {
                 ipcRenderer.send('savePreset', [this.preset_name, this._config]);
-            }
+            },
+            
         }
     }
 </script>
