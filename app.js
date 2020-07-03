@@ -389,7 +389,7 @@ app.on('ready', () => {
         })
     });
     ipcMain.on('get-venn-data', (event, args) => {
-        analysis.getVennData(function(data) {
+        analysis.getVennData(args["target_type"],function(data) {
             window.webContents.send('set-venn-data', data);
         });
     });
@@ -463,7 +463,7 @@ app.on('ready', () => {
             let filename = result.filePath;
             if (filename) {
                 window.webContents.send('start-export');
-                analysis.exportCommonSequences(args, filename, function() {
+                analysis.exportCommonSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
                 });
             }
@@ -483,14 +483,14 @@ app.on('ready', () => {
             let filename = result.filePath;
             if (filename) {
                 window.webContents.send('start-export');
-                analysis.exportOverlappedSequences(args, filename, function() {
+                analysis.exportOverlappedSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
                 });
             }
         });
     });
     ipcMain.on('export-overlapped-sequences-fastq', (event, args) => {
-        showFastqSaveDialog(args,0);
+        showFastqSaveDialog(args["settings"],0,args["target_type"]);
     });
     
     ipcMain.on('start-new-analysis', (event, args) => {
@@ -501,7 +501,7 @@ app.on('ready', () => {
     });
 });
 
-function showFastqSaveDialog(args,counter){
+function showFastqSaveDialog(args,counter,target_type){
     dialog.showOpenDialog(null, {
         properties: ['openDirectory'],
         title: 'Specify a output directory',
@@ -521,7 +521,7 @@ function showFastqSaveDialog(args,counter){
                 }
                 if(fileflag.length == 0){
                     window.webContents.send('start-export');
-                    analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                    analysis.exportOverlappedSequencesFastq(args, target_type, filename, function() {
                         window.webContents.send('finish-export');
                     });
                 }else{
@@ -533,14 +533,14 @@ function showFastqSaveDialog(args,counter){
                         }) .then(dresult => {
                             if (dresult.response === 0) {
                                 window.webContents.send('start-export');
-                                analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                                analysis.exportOverlappedSequencesFastq(args, target_type, filename, function() {
                                     window.webContents.send('finish-export');
                                 });
                             } else if (dresult.response === 1) {
                                 if(counter > 10){
                                     dialog.showErrorBox("Limit exceeded","You have pressed too much No button.");
                                 }else{
-                                    showFastqSaveDialog(args,counter+1);
+                                    showFastqSaveDialog(args, counter+1, target_type);
                                 }
                             }else{
                                 //Cancel
