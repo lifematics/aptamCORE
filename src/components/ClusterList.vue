@@ -195,6 +195,7 @@ export default {
             this.$emit('prevPage');
         },
         updateBaseColorAll() {
+            this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span'), "#ffffff");
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-A'), this.preferences.color.a);
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-C'), this.preferences.color.c);
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-G'), this.preferences.color.g);

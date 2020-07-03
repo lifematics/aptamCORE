@@ -141,6 +141,7 @@ export default {
                 });
                 let item = {
                     id: 'graph-' + dataIndex,
+                    labels:[''],
                     datasets: dataEntryList,
                 };
                 if(selectedSequence_check.length > 0){
@@ -148,7 +149,7 @@ export default {
                 }
                 let ttitle = this.selectedSequence;
                 if(!data.sequence && selectedSequence_check.length == 0){
-                    ttitle = "Not Found"
+                    ttitle = "Not Found:"+this.selectedSequence;
                 }
                 selectedSequence_check += data.sequence+"";
                 let option = {

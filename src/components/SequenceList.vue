@@ -152,6 +152,7 @@ export default {
             this.$emit('searchSequencesThreshold',this.search_key, this.threshold);
         },
         updateBaseColorAll() {
+            this.updateBaseColor(document.querySelectorAll('div.SequenceList table.sequence-table tr td span'), "#ffffff");
             this.updateBaseColor(document.querySelectorAll('div.SequenceList table.sequence-table tr td span.base-A'), this.preferences.color.a);
             this.updateBaseColor(document.querySelectorAll('div.SequenceList table.sequence-table tr td span.base-C'), this.preferences.color.c);
             this.updateBaseColor(document.querySelectorAll('div.SequenceList table.sequence-table tr td span.base-G'), this.preferences.color.g);

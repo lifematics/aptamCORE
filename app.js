@@ -15,6 +15,62 @@ var analysisPresets = null;
 var statisticData = null;
 var windowTitle = '';
 var fastqList = [];//{file1:Fastq へのパス, file2:Fastq へのパス}のリスト。
+var scoringFunctionArr = [];
+
+//上昇傾向をとるためのスコア関数の設定
+scoringFunctionArr.push(
+    [
+        "none"
+        ,null
+    ]
+);
+scoringFunctionArr.push(
+    [
+        "Minimum Diff: min(ratio$round_2-ratio$round_1,ratio$round_3-ratio$round_2,ratio$round_4-ratio$round_3....)"
+        ,function(ratiolist){
+            let lmin = ratiolist[ratiolist.length-1];
+            for(let ii = 0;ii < ratiolist.length-1;ii++){
+                lmin = Math.min(ratiolist[ii+1]-ratiolist[ii],lmin);
+            }
+            return lmin;
+        }
+    ]
+);
+scoringFunctionArr.push(
+    [
+        "Final Diff: ratio$last_round - ratio$first_round"
+        ,function(ratiolist){
+            return ratiolist[ratiolist.length-1]-ratiolist[0];
+        }
+    ]
+);
+scoringFunctionArr.push(
+    [
+        "Minimum Scale: min(ratio$round_2/(ratio$round_1+0.00001),ratio$round_3/(ratio$round_2+0.00001),ratio$round_4/(ratio$round_3+0.00001)....)"
+        ,function(ratiolist){
+            let lmin = ratiolist[ratiolist.length-1];
+            for(let ii = 0;ii < ratiolist.length-1;ii++){
+                lmin = Math.min(ratiolist[ii+1]/(ratiolist[ii],lmin+0.00001));
+            }
+            return lmin;
+        }
+    ]
+);
+scoringFunctionArr.push(
+    [
+        "Final Scale: ratio$last_round/(ratio$first_round+0.00001)"
+        ,function(ratiolist){
+            return (ratiolist[ratiolist.length-1]/(ratiolist[0]+0.00001));
+        }
+    ]
+);
+//他コンポーネントでも使えるようにインスタンスの整理
+var scoringFunctionDic = {};
+var scoringFunctionNames = [];
+for(let ii = 0;ii < scoringFunctionArr.length;ii++){
+    scoringFunctionNames.push(scoringFunctionArr[ii][0]);
+    scoringFunctionDic[scoringFunctionArr[ii][0]] = scoringFunctionArr[ii][1];
+}
 
 
 function analysisChanged(analysisConfig) {
@@ -84,6 +140,7 @@ app.on('ready', () => {
     }
     window.webContents.on('did-finish-load', function() {
         window.webContents.send('hasLicense', [appPreferences.hasLicense]);
+        window.webContents.send('set-scoring-function-names',scoringFunctionNames);
     });
     appPreferences.setListener(function(preferences) {
         window.webContents.send('preferencesChanged', preferences);
@@ -95,7 +152,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    //window.webContents.openDevTools()
+    window.webContents.openDevTools()
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -121,6 +178,10 @@ app.on('ready', () => {
         analysisPresets.save(args[0], args[1]);
         
         //writeFileSync なので問題ないはず
+        window.webContents.send('presetsChanged', analysisPresets.get());
+    });
+    ipcMain.on('removePreset', (event, args) => {
+        analysisPresets.remove(args[0]);
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
     analysis.setStatisticDataRecorder(statisticData);
@@ -172,15 +233,15 @@ app.on('ready', () => {
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
-                analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
-                    console.log(data);
+                analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
+                    //console.log(data);
                     window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
                 });
             });
         }else{
             let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
-            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
+            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
                 //console.log(data);
                 window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
             });
@@ -285,11 +346,24 @@ app.on('ready', () => {
         let page = args["page"];
         let compareTarget = args["compare_target"];
         let filterSettings = args["filter_settings"];
-        analysis.getDataSetClusterCount(dataSetId, filterSettings["conditions"],filterSettings["threshold"] , function(count) {
-            analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, data) {
-                window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: count, page: page, size: numberOfCompare });
-            });
-        })
+        let scoring_function =  args["scoring_function"];
+        if(scoring_function in scoringFunctionDic){
+            if(scoringFunctionDic[scoring_function]){
+                analysis.getDataSetClusterCount(dataSetId, filterSettings["conditions"],filterSettings["threshold"] , function(count) {
+                    analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, scoringFunctionDic[scoring_function], function(dataSets, data) {
+                        window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: count, page: page, size: numberOfCompare });
+                    });
+                })
+            }else{
+                analysis.getDataSetClusterCount(dataSetId, filterSettings["conditions"],filterSettings["threshold"] , function(count) {
+                    analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
+                        window.webContents.send('set-compare-data', { dataSets: dataSets, data: data, total: count, page: page, size: numberOfCompare });
+                    });
+                })
+            }
+        }else{
+            throw scoring_function+"is not found in dictionary!";
+        }
     });
     ipcMain.on('export-compare-data', (event, args) => {
         let dataSetId = args["dataset_id"];
@@ -297,6 +371,7 @@ app.on('ready', () => {
         let page = args["page"];
         let compareTarget = args["compare_target"];
         let filterSettings = args["filter_settings"];
+        let scoring_function = args["scoring_function"];
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
             title: 'Specify a output file',
@@ -307,7 +382,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
-                analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget,filterSettings, function () {
+                analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget, filterSettings, scoringFunctionDic[scoring_function], function () {
                     window.webContents.send('finish-export');
                 });
             }
@@ -414,6 +489,10 @@ app.on('ready', () => {
             }
         });
     });
+    ipcMain.on('export-overlapped-sequences-fastq', (event, args) => {
+        showFastqSaveDialog(args,0);
+    });
+    
     ipcMain.on('start-new-analysis', (event, args) => {
         showNewAnalysisDialog();
     });
@@ -421,6 +500,58 @@ app.on('ready', () => {
         showOpenAnalysisDialog();
     });
 });
+
+function showFastqSaveDialog(args,counter){
+    dialog.showOpenDialog(null, {
+        properties: ['openDirectory'],
+        title: 'Specify a output directory',
+        defaultPath: '.'
+    }).then(function(result) {
+        let filename = result.filePaths[0];
+        if (filename) {
+            analysis.getDataSets(function(dataSets) {
+                let fileflag = [];
+                for(let dd = 0;dd < dataSets.length;dd++){
+                    let fname = analysis.getOutputFastqName(filename,dataSets[dd]);
+                    try {
+                        fs.statSync(fname);
+                        fileflag.push(fname);
+                    } catch(e) {
+                    }
+                }
+                if(fileflag.length == 0){
+                    window.webContents.send('start-export');
+                    analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                        window.webContents.send('finish-export');
+                    });
+                }else{
+                    dialog.showMessageBox(
+                        null,
+                        {
+                          message: fileflag.join(",")+" already exist.\n Do you want to overwrite files?",
+                          buttons: ["Yes","No", "Cancel"],
+                        }) .then(dresult => {
+                            if (dresult.response === 0) {
+                                window.webContents.send('start-export');
+                                analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                                    window.webContents.send('finish-export');
+                                });
+                            } else if (dresult.response === 1) {
+                                if(counter > 10){
+                                    dialog.showErrorBox("Limit exceeded","You have pressed too much No button.");
+                                }else{
+                                    showFastqSaveDialog(args,counter+1);
+                                }
+                            }else{
+                                //Cancel
+                            }
+                        }
+                    );
+                }
+            });
+        }
+    });
+}
 function showNewAnalysisDialog(){
     dialog.showSaveDialog(null, {
         properties: ['promptToCreate'],

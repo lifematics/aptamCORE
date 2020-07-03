@@ -15,7 +15,6 @@
 
     <div class="export">
       <div>Common Sequence Export</div>
-
       <div class="export-item">
         <div v-for="(data, index) in dataSets" :key="index">
           <span>{{data.name}}</span>
@@ -27,21 +26,22 @@
 
       <div class="export-item">
         <button v-on:click="exportSequences">Export</button>
+        <button v-on:click="exportSequencesFastq">Create Fastq</button>
       </div>
 
       <div class="export-end"></div>
     </div>
-
-    <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list">
-      <div class="col-sm-2">
+    <div class="row" style="margin-left:20px;text-weight:bold;">Show intersection of <input type="text" style="width:60px;margin-left:8px;margin-right:8px;" v-model="clusterNumberFilter" v-on:keyup="changeClusterNumberFilter" /> datasets.</div>
+    <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list" :id="'venn_combination_'+index">
+      <div class="col-sm-4">
         <button type="button" @click="exportVennSequence(area.sets)">Export</button>
+        <button type="button" @click="exportVennSequenceFastq(area.ids)">Create Fastq</button>
       </div>
       <div class="col-sm-2">{{area.size}} Families</div>
       <div class="col-sm-8">
         <span v-for="(item, i) in area.sets" :key="i"> {{item}} </span>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -65,6 +65,7 @@
         selectedVenTarget: Array,
         selectedVennData: Array,
         exportSettings: Object,
+        clusterNumberFilter:""
       }
     },
     
@@ -152,6 +153,35 @@
       },
       exportSequences: function() {
         ipcRenderer.send('export-overlapped-sequences', this.exportSettings);
+      },
+      exportVennSequenceFastq: function(ids) {
+        let expset = {};
+        for(let ii = 0;ii < this.dataSets.length;ii++){
+          expset[this.dataSets[ii].id] = 0;
+        }
+        for(let ii = 0;ii < ids.length;ii++){
+          expset[ids[ii]] = 1;
+        }
+        ipcRenderer.send('export-overlapped-sequences-fastq', expset);
+      },
+      exportSequencesFastq: function() {
+        ipcRenderer.send('export-overlapped-sequences-fastq', this.exportSettings);
+      },
+      changeClusterNumberFilter:function(){
+        for(let ii = 0;ii < this.selectedVennData.length;ii++){
+          let ddiv = document.getElementById('venn_combination_'+ii);
+          if(this.clusterNumberFilter.length > 0){
+            if(this.clusterNumberFilter == this.selectedVennData[ii].sets.length+""){
+              ddiv.style['display'] = 'flex';
+              ddiv.style['flex-wrap'] = 'wrap';
+            }else{
+              ddiv.style['display'] = 'none';
+            }
+          }else{
+              ddiv.style['display'] = 'flex';
+              ddiv.style['flex-wrap'] = 'wrap';
+          }
+        }
       }
     },
   }
