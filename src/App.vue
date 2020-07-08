@@ -194,6 +194,11 @@
                     this.dataSetChanged(this.dataSetList[0].id);
                 }
             });
+            
+            ipcRenderer.on('changeDataset', (event, args) => {
+                this.dataSetChanged(args["id"]);
+            });
+
             ipcRenderer.on('clusterListChanged', (event, result) => {
                 this.isLoading = false;
                 this.seqCountOfDataSet = result['sequence_count'];
@@ -215,7 +220,6 @@
                 let to = from + this.sequenceList.length - 1;
                 let total = Math.floor((result['variant_count'] + listSize - 1) / listSize);
                 this.pageOfSequences = { 'total': total, 'current': page, 'from': from, 'to': to };
-
             });
             ipcRenderer.on('allSequenceListChanged', (event, result) => {
                 this.isLoading = false;

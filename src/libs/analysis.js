@@ -9,6 +9,7 @@ var readline = require('readline');
 var async = require('async');
 var temp = require('temp');
 const zlib     = require('zlib');
+const { Exception } = require('handlebars');
 
 const MERGER_CMD = '/tools/flash2';
 const MERGER_ARGS = ' -z --allow-outies --max-overlap 1000 ';
@@ -1921,6 +1922,9 @@ class Analysis {
             } else if (ext == '.fasta') {
                 let clusters = result.clusters;
                 self.exportAsFasta(filename, clusters, callback);
+            } else{
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }
@@ -1937,6 +1941,9 @@ class Analysis {
                 }
             } else if (ext == '.fasta') {
                 self.exportAsFasta(filename, result.sequences, callback);
+            } else {
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }

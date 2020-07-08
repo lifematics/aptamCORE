@@ -155,7 +155,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    window.webContents.openDevTools()
+    window.webContents.openDevTools();
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -191,8 +191,23 @@ app.on('ready', () => {
         analysisPresets.remove(args[0]);
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
+
     analysis.setStatisticDataRecorder(statisticData);
     analysis.setPreferences(appPreferences);
+
+    //preferences を変更する。テストでの使用以外は想定していない。
+    ipcMain.on('change-preferences-debug',(event,args) => {
+        appPreferences.changePreferencesDebug(args['preferences']);
+        analysis.setPreferences(appPreferences);
+        window.webContents.send('preferencesChanged', appPreferences.get());
+    });
+
+    //dataset を変更する。テストでの使用以外は想定していない。
+    ipcMain.on('change-dataset-debug',(event,args) => {
+        window.webContents.send('changeDataset',args);
+    });
+
+    
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
     });
@@ -538,20 +553,26 @@ function showFastqSaveDialog(args,counter,target_type){
         defpath = defaultFilePath_debug;
     }
     dialog.showOpenDialog(null, {
+        //properties: ['openDirectory',"openFile","promptToCreate","createDirectory"],
         properties: ['openDirectory'],
-        title: 'Specify an output directory',
+        title: 'Select an output directory',
         defaultPath: defpath,
-        properties:["promptToCreate","createDirectory"]
     }).then(function(result) {
         let filename = result.filePaths[0];
         if (filename) {
+            //https://github.com/electron/electron/issues/9411
+            //今のところ存在しないディレクトリの指定はできないようだ
+            /*。
             try {
                 fs.statSync(filename);
             } catch(e) {
                 if(e.code === 'ENOENT') {
+                    console.log(filename);
                     fs.mkdirSync(filename);
                 }
             }
+            */
+           
             analysis.getDataSets(function(dataSets) {
                 let fileflag = [];
                 for(let dd = 0;dd < dataSets.length;dd++){

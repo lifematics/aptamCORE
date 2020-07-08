@@ -9,8 +9,8 @@
                     <div class="row" id="subframediv">
                         <h2>Families</h2>
                         <span style="margin-top:10px">
-                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_member" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_member">Member</label> 
-                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_compare" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_compare">Compare</label> 
+                        <input type="radio" id="radio_clusterlist_subframe_member" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_clusterlist_subframe_member">Member</label> 
+                        <input type="radio" id="radio_clusterlist_subframe_compare" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_clusterlist_subframe_compare">Compare</label> 
                         </span>
                     </div> 
                 </div>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="">
-                        <button v-on:click="exportAsCsv" id="button_cluster_exportcsv" value="Export">Export</button>
+                        <button v-on:click="exportFile" id="button_clusterlist_export" value="Export">Export</button>
                     </div>
                 </div>
             </div>
@@ -180,7 +180,7 @@ export default {
                 this.$emit('loadCompareOne',  this.selectedSequence);
             }
         },
-        exportAsCsv: function() {
+        exportFile: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
         },
         searchClusterThreshold: function() {

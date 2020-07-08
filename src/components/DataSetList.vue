@@ -4,8 +4,8 @@
 <template>
     <div class="DataSetList">
         <h3>Datasets</h3>
-        <draggable v-model="$data.dataSetList_This" @start="drag=true" @end="drag=false" @choose="dataSetSelected" @sort="onSort">
-            <div v-for="element in $data.dataSetList_This" :key="element.id" v-bind:class="{ selected: element.id == selected }">{{element.name}}</div>
+        <draggable id="draggable_datasetlist" v-model="$data.dataSetList_This" @start="drag=true" @end="drag=false" @choose="dataSetSelected" @sort="onSort">
+            <div v-for="element in $data.dataSetList_This" :key="element.id" :id="'div_datasetlist_'+element.id" v-bind:class="{ selected: element.id == selected }">{{element.name}}</div>
         </draggable>
         <hr/>
     </div>

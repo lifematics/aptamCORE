@@ -39,8 +39,8 @@
     <div class="row" style="margin-left:20px;text-weight:bold;">List combination among <input type="text" style="width:60px;margin-left:8px;margin-right:8px;" v-model="clusterNumberFilter" v-on:keyup="changeClusterNumberFilter" /> datasets.</div>
     <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list" :id="'venn_combination_'+index"  :style="'padding-top:4px;padding-bottom:4px;background-color:rgb('+(255-index%2*32)+','+(255-index%2*32)+',255)'">
       <div class="col-sm-4">
-        <button type="button" @click="exportVennSequence(area.sets)">Export</button>
-        <button type="button" @click="exportVennSequenceFastq(area.ids)">Create Fastq</button>
+        <button type="button" :id="'button_venn_export_table_'+index" @click="exportVennSequence(area.sets)">Export</button>
+        <button type="button" :id="'button_venn_export_fastq_table_'+index" @click="exportVennSequenceFastq(area.ids)">Create Fastq</button>
       </div>
       <div class="col-sm-2" v-if="targetType == 'cluster'">{{area.size}} Clusters</div>
       <div class="col-sm-2" v-if="targetType == 'sequence'">{{area.size}} Sequences</div>

@@ -17,7 +17,7 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="">
-                        <button v-on:click="exportAsCsv" value="Export">Export</button>
+                        <button id="button_sequencelist_export" v-on:click="exportFile" value="Export">Export</button>
                     </div>
                 </div>
             </div>
@@ -136,7 +136,7 @@ export default {
             let ddiv = document.getElementById(divid);
             ddiv.style["background-color"] = color_str;
         },
-        exportAsCsv: function() {
+        exportFile: function() {
             this.threshold['count'] = this.totalCount * this.threshold['ratio'] / 100.0;
             ipcRenderer.send('export-sequence-data', [this.dataSetId, this.clusterId, this.search_key, this.threshold]);
         },

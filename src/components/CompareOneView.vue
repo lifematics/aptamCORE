@@ -8,7 +8,7 @@
                 <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-on:change="changeCompareTargetProp" v-model="compareTarget" value="cluster_representative" checked> <label for="radio_representative">Cluster Representatives</label> 
                 <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_cluster_all" v-on:change="changeCompareTargetProp"  v-model="compareTarget" value="cluster_all"> <label for="radio_cluster_all">Cluster Members</label> 
                 <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_sequences" v-on:change="changeCompareTargetProp"  v-model="compareTarget" value="sequences"> <label for="radio_sequences">Sequences</label> 
-                <button v-on:click="exportAsCsv" value="Export" style="margin-left:30px;">Export</button>
+                <button id="button_compareone_export" v-on:click="exportAsCsv" value="Export" style="margin-left:30px;">Export</button>
                 <button class="copy-button" v-on:click="copySequence">Copy Sequence</button>
             </div> 
             
