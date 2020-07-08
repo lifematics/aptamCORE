@@ -1,8 +1,8 @@
 <template>
   <center style="padding:20%">
     <div class="Home">
-      <button type="button" v-on:click="start_new_analysis"  style="background-color:white;border:solid 3px blue; border-radius: 5px;font-size:24px;margin-left:40px;margin-right:40px;">New Analysis</button> 
-      <button type="button" v-on:click="open_analysis"  style="background-color:white;border:solid 3px blue; border-radius: 5px;font-size:24px;margin-left:40px;margin-right:40px;">Open Analysis</button>
+      <button type="button" id="button_new_analysis" v-on:click="start_new_analysis"  style="background-color:white;border:solid 3px blue; border-radius: 5px;font-size:24px;margin-left:40px;margin-right:40px;">New Analysis</button> 
+      <button type="button" id="button_open_analysis" v-on:click="open_analysis"  style="background-color:white;border:solid 3px blue; border-radius: 5px;font-size:24px;margin-left:40px;margin-right:40px;">Open Analysis</button>
     </div>
   </center>
 </template>

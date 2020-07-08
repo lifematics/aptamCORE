@@ -37,22 +37,22 @@
                 <div class="content">
                     <data-set-list ref="datasetListComponent" :selected="activeDataSet" v-on:dataSetChanged="dataSetChanged"/>
                     <div class="button-container">
-                        <button v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
+                        <button id="button_analyze" v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
+                        <button id="button_information" v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
+                        <button id="button_families" v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
+                        <button id="button_sequences" v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
+                        <button id="button_compare" v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
+                        <button id="button_venn" v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
                     </div>
                 </div>
             </div>

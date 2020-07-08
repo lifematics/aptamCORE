@@ -30,13 +30,13 @@
       </div>
 
       <div class="export-item">
-        <button v-on:click="exportSequences">Export</button>
-        <button v-on:click="exportSequencesFastq">Create Fastq</button>
+        <button id="button_venn_export_combination" v-on:click="exportSequences">Export</button>
+        <button id="button_venn_export_fastq_combination" v-on:click="exportSequencesFastq">Create Fastq</button>
       </div>
 
       <div class="export-end"></div>
     </div>
-    <div class="row" style="margin-left:20px;text-weight:bold;">Show intersection among <input type="text" style="width:60px;margin-left:8px;margin-right:8px;" v-model="clusterNumberFilter" v-on:keyup="changeClusterNumberFilter" /> datasets.</div>
+    <div class="row" style="margin-left:20px;text-weight:bold;">List combination among <input type="text" style="width:60px;margin-left:8px;margin-right:8px;" v-model="clusterNumberFilter" v-on:keyup="changeClusterNumberFilter" /> datasets.</div>
     <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list" :id="'venn_combination_'+index"  :style="'padding-top:4px;padding-bottom:4px;background-color:rgb('+(255-index%2*32)+','+(255-index%2*32)+',255)'">
       <div class="col-sm-4">
         <button type="button" @click="exportVennSequence(area.sets)">Export</button>

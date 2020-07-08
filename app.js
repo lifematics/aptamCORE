@@ -16,6 +16,9 @@ var statisticData = null;
 var windowTitle = '';
 var fastqList = [];//{file1:Fastq へのパス, file2:Fastq へのパス}のリスト。
 var scoringFunctionArr = [];
+var defaultFilePath_debug = null;
+
+
 
 //上昇傾向をとるためのスコア関数の設定
 scoringFunctionArr.push(
@@ -167,6 +170,10 @@ app.on('ready', () => {
     });
 
     createMenu();
+
+    ipcMain.on('set-default-file-path', (event, args) => {
+        defaultFilePath_debug = args["defaultFilePath"];
+    });
 
     ipcMain.on('load-preferences', (event, args) => {
         window.webContents.send('preferencesChanged', appPreferences.get());
@@ -372,10 +379,14 @@ app.on('ready', () => {
         let compareTarget = args["compare_target"];
         let filterSettings = args["filter_settings"];
         let scoring_function = args["scoring_function"];
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
             ]
@@ -394,10 +405,14 @@ app.on('ready', () => {
         });
     });
     ipcMain.on('write_to_file', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'Text File', extensions: ['txt']},
             ]
@@ -411,10 +426,14 @@ app.on('ready', () => {
         );
     });
     ipcMain.on('export-cluster-data', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
@@ -432,10 +451,14 @@ app.on('ready', () => {
         })
     });
     ipcMain.on('export-sequence-data', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
@@ -451,10 +474,14 @@ app.on('ready', () => {
         });
     });
     ipcMain.on('export-intersection-sequence-data', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File', extensions: ['fasta']},
@@ -470,11 +497,15 @@ app.on('ready', () => {
         })
     });
     ipcMain.on('export-overlapped-sequences', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         console.log('export-overlapped-sequences');
         dialog.showSaveDialog(null, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File', extensions: ['fasta']},
@@ -502,13 +533,25 @@ app.on('ready', () => {
 });
 
 function showFastqSaveDialog(args,counter,target_type){
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
     dialog.showOpenDialog(null, {
         properties: ['openDirectory'],
-        title: 'Specify a output directory',
-        defaultPath: '.'
+        title: 'Specify an output directory',
+        defaultPath: defpath,
+        properties:["promptToCreate","createDirectory"]
     }).then(function(result) {
         let filename = result.filePaths[0];
         if (filename) {
+            try {
+                fs.statSync(filename);
+            } catch(e) {
+                if(e.code === 'ENOENT') {
+                    fs.mkdirSync(filename);
+                }
+            }
             analysis.getDataSets(function(dataSets) {
                 let fileflag = [];
                 for(let dd = 0;dd < dataSets.length;dd++){
@@ -553,10 +596,14 @@ function showFastqSaveDialog(args,counter,target_type){
     });
 }
 function showNewAnalysisDialog(){
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
     dialog.showSaveDialog(null, {
         properties: ['promptToCreate'],
         title: 'Select a analysis file',
-        defaultPath: '.',
+        defaultPath: defpath,
         filters: [
             {name: 'Analysis File', extensions: ['db']}
         ]
@@ -611,10 +658,14 @@ function writeToFile(filename,lines){
     });
 }
 function showOpenAnalysisDialog(){
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
     dialog.showOpenDialog(null, {
         properties: ['openFile'],
         title: 'Select a analysis file',
-        defaultPath: '.',
+        defaultPath: defpath,
         filters: [
             {name: 'Analysis File', extensions: ['db']}
         ]

@@ -23,7 +23,7 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="">
-                        <button v-on:click="exportAsCsv" value="Export">Export</button>
+                        <button v-on:click="exportAsCsv" id="button_cluster_exportcsv" value="Export">Export</button>
                     </div>
                 </div>
             </div>

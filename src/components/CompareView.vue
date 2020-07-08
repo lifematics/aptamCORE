@@ -8,12 +8,12 @@
                 <div class="col-sm-4">Number of Sequences: <input type="text" v-model="compareNumber" v-on:change="changeNumberOfCompare" /></div>
                 <div class="col-sm-4">
                     <div class="page-control">
-                        <button :disabled="page.current <= 1" v-on:click="prevPage">Prev</button>
+                        <button id="button_compare_prevpage" :disabled="page.current <= 1" v-on:click="prevPage">Prev</button>
                         {{ page.current }} / {{ page.total }}
-                        <button :disabled="page.current >= page.total" v-on:click="nextPage">Next</button>
+                        <button id="button_compare_nextpage" :disabled="page.current >= page.total" v-on:click="nextPage">Next</button>
                     </div>
                 </div>
-                <div class="col-sm-4"><button v-on:click="exportAsCsv" value="Export">Export</button></div>
+                <div class="col-sm-4"><button id="button_compare_exportcsv" v-on:click="exportAsCsv" value="Export">Export</button></div>
             </div>
             
             <div class="switch_head" v-on:click="changeVisibility('filter_div')"><div id="filter_div_switch" class="switch">+</div> Filters:</div>
