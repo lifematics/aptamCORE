@@ -176,7 +176,7 @@ export default {
                 self.chartData.push(item);
                 self.options.push(option);
             });
-            if(self.compareTarget != "cluster_all"){
+            if(self.compareTarget != "cluster_all"){//cluster_all の場合は返ってくる配列（representative になるはず）が異なる場合があるのでチェックしない
                 if(selectedSequence_check != "undefined"){
                     if(selectedSequence_check != self.selectedSequence){
                         throw "error in code??\n"+selectedSequence_check+"\n"+self.selectedSequence+"?????";

@@ -248,10 +248,11 @@ app.on('ready', () => {
         let numberOfCompare = 1;
         let page = 1;
         let compareTarget = args["target"];
-        if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず
+        if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず。Cluster representative の配列を基準にするため
             console.log("?????");
         }
         if(args["cluster_id"]){
+            //Families パネルからの呼び出し
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
@@ -261,6 +262,7 @@ app.on('ready', () => {
                 });
             });
         }else{
+            //Sequences パネルからの呼び出し
             let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
@@ -398,7 +400,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -424,7 +426,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -445,7 +447,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -470,7 +472,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -493,7 +495,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -517,7 +519,7 @@ app.on('ready', () => {
             defpath = defaultFilePath_debug;
         }
         console.log('export-overlapped-sequences');
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
             defaultPath: defpath,
@@ -538,7 +540,6 @@ app.on('ready', () => {
     ipcMain.on('export-overlapped-sequences-fastq', (event, args) => {
         showFastqSaveDialog(args["settings"],0,args["target_type"]);
     });
-    
     ipcMain.on('start-new-analysis', (event, args) => {
         showNewAnalysisDialog();
     });
@@ -552,7 +553,7 @@ function showFastqSaveDialog(args,counter,target_type){
     if(defaultFilePath_debug){
         defpath = defaultFilePath_debug;
     }
-    dialog.showOpenDialog(null, {
+    dialog.showOpenDialog(window, {
         //properties: ['openDirectory',"openFile","promptToCreate","createDirectory"],
         properties: ['openDirectory'],
         title: 'Select an output directory',
@@ -621,7 +622,7 @@ function showNewAnalysisDialog(){
     if(defaultFilePath_debug){
         defpath = defaultFilePath_debug;
     }
-    dialog.showSaveDialog(null, {
+    dialog.showSaveDialog(window, {
         properties: ['promptToCreate'],
         title: 'Select a analysis file',
         defaultPath: defpath,
