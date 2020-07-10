@@ -1,6 +1,3 @@
-/**
- * Created by doi on 2019/01/04.
- */
 const sqlite3 = require('sqlite3').verbose();
 const exec = require('child_process').exec
 var path = require('path');

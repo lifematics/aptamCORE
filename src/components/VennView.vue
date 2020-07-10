@@ -1,6 +1,3 @@
-/**
-* Created by doi on 2018/12/30.
-*/
 <template>
   <div class="VennView" style="height: 400px;">
     <div class="export">
