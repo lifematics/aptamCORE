@@ -1,6 +1,3 @@
-/**
- * Created by doi on 2019/01/04.
- */
 const sqlite3 = require('sqlite3').verbose();
 const exec = require('child_process').exec
 var path = require('path');
@@ -9,6 +6,7 @@ var readline = require('readline');
 var async = require('async');
 var temp = require('temp');
 const zlib     = require('zlib');
+const { Exception } = require('handlebars');
 
 const MERGER_CMD = '/tools/flash2';
 const MERGER_ARGS = ' -z --allow-outies --max-overlap 1000 ';
@@ -1675,7 +1673,7 @@ class Analysis {
         });
     }    
 
-    exportDataSetAsFastaFile(dataSets, index, files, callback) {
+    exportDataSetAsFastaFile(dataSets, index, files, target_type, callback) {
         const self = this;
         if (index >= dataSets.length) {
             callback(files);
@@ -1687,29 +1685,48 @@ class Analysis {
             if (error) {
                 throw error;
             }
-            self.getClusters(dataSetId, null, null, null, 0, function(result) {
-                result.clusters.forEach(function(cluster) {
-                    fs.writeSync(info.fd, ">" + cluster.name + "\n");
-                    fs.writeSync(info.fd, cluster.sequence[1] + "\n");
+            if(target_type == "cluster"){
+                self.getClusters(dataSetId, null, null, null, 0, function(result) {
+                    result.clusters.forEach(function(cluster) {
+                        fs.writeSync(info.fd, ">" + cluster.name + "\n");
+                        fs.writeSync(info.fd, cluster.sequence[1] + "\n");
+                    });
+                    fs.close(info.fd, function(error) {
+                        files[dataSetId] = info.path;
+                        self.exportDataSetAsFastaFile(dataSets, index + 1, files, target_type, callback);
+                    });
                 });
-                fs.close(info.fd, function(error) {
-                    files[dataSetId] = info.path;
-                    self.exportDataSetAsFastaFile(dataSets, index + 1, files, callback);
+            }else if(target_type == "sequence"){
+                self.getSequences(dataSetId,null , "", null, null, {
+                    ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0
+                }
+                , function(result) {
+                    result.sequences.forEach(function(sequence) {
+                        fs.writeSync(info.fd, ">" + sequence.name + "\n");
+                        fs.writeSync(info.fd, sequence.sequence[1] + "\n");
+                    });
+                    fs.close(info.fd, function(error) {
+                        files[dataSetId] = info.path;
+                        self.exportDataSetAsFastaFile(dataSets, index + 1, files, target_type, callback);
+                    });
                 });
-            });
+            }else{
+                throw type+" is not defined.";
+            }
+            
         });
     }
 
-    exportDataSetAsFasta(dataSets, callback) {
-        this.exportDataSetAsFastaFile(dataSets, 0, {},function(files) {
+    exportDataSetAsFasta(dataSets, type, callback) {
+        this.exportDataSetAsFastaFile(dataSets, 0, {}, type,function(files) {
             callback(files);
         });
     }
 
-    getVennData(callback) {
+    getVennData(type, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, type, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
                 let command = '"'+self.base + VENN_CMD + '" --command summary --include "' + files.join('" --include "') + '"';
                 recordLog(command);
@@ -1902,6 +1919,9 @@ class Analysis {
             } else if (ext == '.fasta') {
                 let clusters = result.clusters;
                 self.exportAsFasta(filename, clusters, callback);
+            } else{
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }
@@ -1912,23 +1932,26 @@ class Analysis {
             let ext = path.extname(filename);
             if (ext == '.csv') {
                 if(clusterId !== null){
-                    self.exportAsCsv(filename, result,"family_sequence", callback);
+                    self.exportAsCsv(filename, result, "family_sequence", callback);
                 }else{
-                    self.exportAsCsv(filename, result,"sequence", callback);
+                    self.exportAsCsv(filename, result, "sequence", callback);
                 }
             } else if (ext == '.fasta') {
                 self.exportAsFasta(filename, result.sequences, callback);
+            } else {
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }
 
-    exportCommonSequences(dataSetNames, filename, callback) {
+    exportCommonSequences(dataSetNames, target_type, filename, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
             dataSets = dataSets.filter((dataSet) => {
                return dataSetNames.includes(dataSet.name);
             });
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
                 let format = path.extname(filename).substr(1);//拡張子の取得
                 let command = '"'+self.base + VENN_CMD + '" --command ' + format + ' --include "' + files.join('" --include "') + '"';
@@ -1945,10 +1968,10 @@ class Analysis {
         });
     }
 
-    exportOverlappedSequences(exportSettings, filename, callback) {
+    exportOverlappedSequences(exportSettings, target_type, filename, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
                 //exportSettings は最初に与えられたファイル順（1 開始）を key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
                 let config = Object.keys(exportSettings).reduce(function(list, id) {
                     if (exportSettings[id] == 1) {
@@ -1979,10 +2002,10 @@ class Analysis {
     getOutputFastqName(dirname,dataset){
         return dirname+'/'+dataset.name.replace(/[^.A-Za-z0-9\-]/,"_")+"."+dataset.cycle_no+".fastq.gz";
     };
-    exportOverlappedSequencesFastq(exportSettings, filename, callback) {
+    exportOverlappedSequencesFastq(exportSettings, target_type, filename, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
                 //exportSettings は最初に与えられたファイル順（1 開始）を key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
                 let config = Object.keys(exportSettings).reduce(function(list, id) {
                     if (exportSettings[id] == 1) {

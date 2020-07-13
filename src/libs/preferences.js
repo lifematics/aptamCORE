@@ -16,6 +16,10 @@ let defaultPreferences = {
             "total_length",
             "count",
             "ratio",
+            "a_ratio",
+            "c_ratio",
+            "g_ratio",
+            "t_ratio",
         ],
         "list_size": 100,
     },
@@ -260,6 +264,12 @@ class AppPreferences {
     show() {
         this.preferences.show();
     }
+
+    //テストでの使用以外は想定していない。
+    changePreferencesDebug(new_preferences){
+        this.preferences.preferences = new_preferences;
+    }
+
     get() {
         return this.preferences.preferences;
     }

@@ -28,8 +28,8 @@
                             <compare-one-view  ref="compareOneComponent" v-on:changeCompareOneTarget="changeCompareOneTarget" v-on:exportCompareOneCSV="exportCompareOneCSV"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight"></compare-one-view>
                         </div>
                     </multipane>
-                    <compare-view v-if="mode == 'compare'" ref="compareComponent" :scoringFunctionNames="scoringFunctionNames" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:changeCompareNumber="changeCompareNumber"></compare-view>
-                    <venn-view v-if="mode == 'venn'"></venn-view>
+                    <compare-view v-if="mode == 'compare'" ref="compareComponent" :scoringFunctionNames="scoringFunctionNames" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:changeCompareNumber="changeCompareNumber"  v-on:setLoadingApp="setLoading"></compare-view>
+                    <venn-view v-if="mode == 'venn'" v-on:setLoadingApp="setLoading"></venn-view>
                 </div>
             </div>
 
@@ -37,22 +37,22 @@
                 <div class="content">
                     <data-set-list ref="datasetListComponent" :selected="activeDataSet" v-on:dataSetChanged="dataSetChanged"/>
                     <div class="button-container">
-                        <button v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
+                        <button id="button_analyze" v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
+                        <button id="button_information" v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
+                        <button id="button_families" v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
+                        <button id="button_sequences" v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
+                        <button id="button_compare" v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
+                        <button id="button_venn" v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
                     </div>
                 </div>
             </div>
@@ -194,6 +194,11 @@
                     this.dataSetChanged(this.dataSetList[0].id);
                 }
             });
+            
+            ipcRenderer.on('changeDataset', (event, args) => {
+                this.dataSetChanged(args["id"]);
+            });
+
             ipcRenderer.on('clusterListChanged', (event, result) => {
                 this.isLoading = false;
                 this.seqCountOfDataSet = result['sequence_count'];
@@ -215,7 +220,6 @@
                 let to = from + this.sequenceList.length - 1;
                 let total = Math.floor((result['variant_count'] + listSize - 1) / listSize);
                 this.pageOfSequences = { 'total': total, 'current': page, 'from': from, 'to': to };
-
             });
             ipcRenderer.on('allSequenceListChanged', (event, result) => {
                 this.isLoading = false;
@@ -280,7 +284,8 @@
                 let from = (page - 1) * size + 1;
                 let to = from + this.compareDataList.length - 1;
                 let total = Math.floor((args['total'] + size - 1) / size);
-                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to }
+                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to };
+                this.isLoading = false;
             });
             ipcRenderer.on('update-compare-one-view',(event, args) => {
                 if((this.clusterSubFrame == "compare" && this.mode == "cluster")
@@ -288,6 +293,7 @@
                     this.$refs.compareOneComponent.setSelectedSequence(args['selected_sequence']);
                     this.$refs.compareOneComponent.updateCompareView(args['dataSets'],args['data'],this.compareOneTarget);
                 }
+                this.isLoading = false;
             });
 
             ipcRenderer.on('set-scoring-function-names',(event, args) => {
@@ -324,6 +330,10 @@
                 this.clusterThreshold = { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 };
                 this.getClusterList();
                 this.getDatasetInfo();
+                this.loadCompareOne("");
+            },
+            setLoading(b){
+                this.isLoading = b;
             },
             clusterChanged: function(id) {
                 this.activeCluster = id.toString();
@@ -372,7 +382,7 @@
                 ipcRenderer.send('load-clusters', [this.activeDataSet, this.clusterSearchConditions, this.preferences.view.list_size, this.pageOfClusters.current, threshold]);
             },
             getSequenceList: function() {
-                //this.isLoading = true;
+                this.isLoading = true;
                 let threshold = {
                     A: this.sequencesThreshold['A'],
                     C: this.sequencesThreshold['C'],
@@ -407,6 +417,7 @@
                 }
             },
             changeCompareOneTarget: function(target,seq){
+                this.isLoading = true;
                 this.compareOneTarget = target;
                 ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
             },
@@ -452,6 +463,7 @@
                 this.compareNumber = numberOfCompare;
             },
             updateCompareData: function() {
+                this.isLoading = true;
                 this.clusterThreshold['count'] = Math.ceil(this.allSequenceCount * this.clusterThreshold['ratio'] / 100.0);
                 this.$refs.compareComponent.loadCompareData();
             },

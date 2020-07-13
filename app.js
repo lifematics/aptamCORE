@@ -16,6 +16,9 @@ var statisticData = null;
 var windowTitle = '';
 var fastqList = [];//{file1:Fastq へのパス, file2:Fastq へのパス}のリスト。
 var scoringFunctionArr = [];
+var defaultFilePath_debug = null;
+
+
 
 //上昇傾向をとるためのスコア関数の設定
 scoringFunctionArr.push(
@@ -48,9 +51,9 @@ scoringFunctionArr.push(
     [
         "Minimum Scale: min(ratio$round_2/(ratio$round_1+0.00001),ratio$round_3/(ratio$round_2+0.00001),ratio$round_4/(ratio$round_3+0.00001)....)"
         ,function(ratiolist){
-            let lmin = ratiolist[ratiolist.length-1];
+            let lmin = ratiolist[1]/(ratiolist[0]+0.00001);
             for(let ii = 0;ii < ratiolist.length-1;ii++){
-                lmin = Math.min(ratiolist[ii+1]/(ratiolist[ii],lmin+0.00001));
+                lmin = Math.min(ratiolist[ii+1]/(ratiolist[ii]+0.00001),lmin);
             }
             return lmin;
         }
@@ -152,7 +155,7 @@ app.on('ready', () => {
     window.setTitle(windowTitle);
 
     // Open the DevTools.
-    window.webContents.openDevTools()
+    window.webContents.openDevTools();
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -167,6 +170,10 @@ app.on('ready', () => {
     });
 
     createMenu();
+
+    ipcMain.on('set-default-file-path', (event, args) => {
+        defaultFilePath_debug = args["defaultFilePath"];
+    });
 
     ipcMain.on('load-preferences', (event, args) => {
         window.webContents.send('preferencesChanged', appPreferences.get());
@@ -184,8 +191,23 @@ app.on('ready', () => {
         analysisPresets.remove(args[0]);
         window.webContents.send('presetsChanged', analysisPresets.get());
     });
+
     analysis.setStatisticDataRecorder(statisticData);
     analysis.setPreferences(appPreferences);
+
+    //preferences を変更する。テストでの使用以外は想定していない。
+    ipcMain.on('change-preferences-debug',(event,args) => {
+        appPreferences.changePreferencesDebug(args['preferences']);
+        analysis.setPreferences(appPreferences);
+        window.webContents.send('preferencesChanged', appPreferences.get());
+    });
+
+    //dataset を変更する。テストでの使用以外は想定していない。
+    ipcMain.on('change-dataset-debug',(event,args) => {
+        window.webContents.send('changeDataset',args);
+    });
+
+    
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
     });
@@ -226,10 +248,11 @@ app.on('ready', () => {
         let numberOfCompare = 1;
         let page = 1;
         let compareTarget = args["target"];
-        if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず
+        if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず。Cluster representative の配列を基準にするため
             console.log("?????");
         }
         if(args["cluster_id"]){
+            //Families パネルからの呼び出し
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
@@ -239,6 +262,7 @@ app.on('ready', () => {
                 });
             });
         }else{
+            //Sequences パネルからの呼び出し
             let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
@@ -372,10 +396,14 @@ app.on('ready', () => {
         let compareTarget = args["compare_target"];
         let filterSettings = args["filter_settings"];
         let scoring_function = args["scoring_function"];
-        dialog.showSaveDialog(null, {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
             ]
@@ -389,15 +417,19 @@ app.on('ready', () => {
         })
     });
     ipcMain.on('get-venn-data', (event, args) => {
-        analysis.getVennData(function(data) {
+        analysis.getVennData(args["target_type"],function(data) {
             window.webContents.send('set-venn-data', data);
         });
     });
     ipcMain.on('write_to_file', (event, args) => {
-        dialog.showSaveDialog(null, {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'Text File', extensions: ['txt']},
             ]
@@ -411,10 +443,14 @@ app.on('ready', () => {
         );
     });
     ipcMain.on('export-cluster-data', (event, args) => {
-        dialog.showSaveDialog(null, {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
@@ -432,10 +468,14 @@ app.on('ready', () => {
         })
     });
     ipcMain.on('export-sequence-data', (event, args) => {
-        dialog.showSaveDialog(null, {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File for Sequence Logo', extensions: ['fasta']},
@@ -451,10 +491,14 @@ app.on('ready', () => {
         });
     });
     ipcMain.on('export-intersection-sequence-data', (event, args) => {
-        dialog.showSaveDialog(null, {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File', extensions: ['fasta']},
@@ -463,18 +507,22 @@ app.on('ready', () => {
             let filename = result.filePath;
             if (filename) {
                 window.webContents.send('start-export');
-                analysis.exportCommonSequences(args, filename, function() {
+                analysis.exportCommonSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
                 });
             }
         })
     });
     ipcMain.on('export-overlapped-sequences', (event, args) => {
+        let defpath = ".";
+        if(defaultFilePath_debug){
+            defpath = defaultFilePath_debug;
+        }
         console.log('export-overlapped-sequences');
-        dialog.showSaveDialog(null, {
+        dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
-            title: 'Specify a output file',
-            defaultPath: '.',
+            title: 'Specify an output file',
+            defaultPath: defpath,
             filters: [
                 {name: 'CSV File', extensions: ['csv']},
                 {name: 'Fasta File', extensions: ['fasta']},
@@ -483,16 +531,15 @@ app.on('ready', () => {
             let filename = result.filePath;
             if (filename) {
                 window.webContents.send('start-export');
-                analysis.exportOverlappedSequences(args, filename, function() {
+                analysis.exportOverlappedSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
                 });
             }
         });
     });
     ipcMain.on('export-overlapped-sequences-fastq', (event, args) => {
-        showFastqSaveDialog(args,0);
+        showFastqSaveDialog(args["settings"],0,args["target_type"]);
     });
-    
     ipcMain.on('start-new-analysis', (event, args) => {
         showNewAnalysisDialog();
     });
@@ -501,14 +548,32 @@ app.on('ready', () => {
     });
 });
 
-function showFastqSaveDialog(args,counter){
-    dialog.showOpenDialog(null, {
+function showFastqSaveDialog(args,counter,target_type){
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
+    dialog.showOpenDialog(window, {
+        //properties: ['openDirectory',"openFile","promptToCreate","createDirectory"],
         properties: ['openDirectory'],
-        title: 'Specify a output directory',
-        defaultPath: '.'
+        title: 'Select an output directory',
+        defaultPath: defpath,
     }).then(function(result) {
         let filename = result.filePaths[0];
         if (filename) {
+            //https://github.com/electron/electron/issues/9411
+            //今のところ存在しないディレクトリの指定はできないようだ
+            /*。
+            try {
+                fs.statSync(filename);
+            } catch(e) {
+                if(e.code === 'ENOENT') {
+                    console.log(filename);
+                    fs.mkdirSync(filename);
+                }
+            }
+            */
+           
             analysis.getDataSets(function(dataSets) {
                 let fileflag = [];
                 for(let dd = 0;dd < dataSets.length;dd++){
@@ -521,7 +586,7 @@ function showFastqSaveDialog(args,counter){
                 }
                 if(fileflag.length == 0){
                     window.webContents.send('start-export');
-                    analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                    analysis.exportOverlappedSequencesFastq(args, target_type, filename, function() {
                         window.webContents.send('finish-export');
                     });
                 }else{
@@ -533,14 +598,14 @@ function showFastqSaveDialog(args,counter){
                         }) .then(dresult => {
                             if (dresult.response === 0) {
                                 window.webContents.send('start-export');
-                                analysis.exportOverlappedSequencesFastq(args, filename, function() {
+                                analysis.exportOverlappedSequencesFastq(args, target_type, filename, function() {
                                     window.webContents.send('finish-export');
                                 });
                             } else if (dresult.response === 1) {
                                 if(counter > 10){
                                     dialog.showErrorBox("Limit exceeded","You have pressed too much No button.");
                                 }else{
-                                    showFastqSaveDialog(args,counter+1);
+                                    showFastqSaveDialog(args, counter+1, target_type);
                                 }
                             }else{
                                 //Cancel
@@ -553,10 +618,14 @@ function showFastqSaveDialog(args,counter){
     });
 }
 function showNewAnalysisDialog(){
-    dialog.showSaveDialog(null, {
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
+    dialog.showSaveDialog(window, {
         properties: ['promptToCreate'],
         title: 'Select a analysis file',
-        defaultPath: '.',
+        defaultPath: defpath,
         filters: [
             {name: 'Analysis File', extensions: ['db']}
         ]
@@ -611,10 +680,14 @@ function writeToFile(filename,lines){
     });
 }
 function showOpenAnalysisDialog(){
+    let defpath = ".";
+    if(defaultFilePath_debug){
+        defpath = defaultFilePath_debug;
+    }
     dialog.showOpenDialog(null, {
         properties: ['openFile'],
         title: 'Select a analysis file',
-        defaultPath: '.',
+        defaultPath: defpath,
         filters: [
             {name: 'Analysis File', extensions: ['db']}
         ]
