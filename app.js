@@ -51,9 +51,9 @@ scoringFunctionArr.push(
     [
         "Minimum Scale: min(ratio$round_2/(ratio$round_1+0.00001),ratio$round_3/(ratio$round_2+0.00001),ratio$round_4/(ratio$round_3+0.00001)....)"
         ,function(ratiolist){
-            let lmin = ratiolist[ratiolist.length-1];
+            let lmin = ratiolist[1]/(ratiolist[0]+0.00001);
             for(let ii = 0;ii < ratiolist.length-1;ii++){
-                lmin = Math.min(ratiolist[ii+1]/(ratiolist[ii],lmin+0.00001));
+                lmin = Math.min(ratiolist[ii+1]/(ratiolist[ii]+0.00001),lmin);
             }
             return lmin;
         }
