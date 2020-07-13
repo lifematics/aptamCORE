@@ -163,6 +163,8 @@ export default {
         },
         loadCompareData: function() {
             if (this.numberOfCompare > 0) {
+                
+                this.$emit('setLoadingApp',true);
                 this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
                 let argss = {
                         "dataset_id": this.target,

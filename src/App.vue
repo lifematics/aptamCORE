@@ -28,7 +28,7 @@
                             <compare-one-view  ref="compareOneComponent" v-on:changeCompareOneTarget="changeCompareOneTarget" v-on:exportCompareOneCSV="exportCompareOneCSV"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight"></compare-one-view>
                         </div>
                     </multipane>
-                    <compare-view v-if="mode == 'compare'" ref="compareComponent" :scoringFunctionNames="scoringFunctionNames" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:changeCompareNumber="changeCompareNumber"></compare-view>
+                    <compare-view v-if="mode == 'compare'" ref="compareComponent" :scoringFunctionNames="scoringFunctionNames" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:changeCompareNumber="changeCompareNumber"  v-on:setLoadingApp="setLoading"></compare-view>
                     <venn-view v-if="mode == 'venn'" v-on:setLoadingApp="setLoading"></venn-view>
                 </div>
             </div>
@@ -284,7 +284,8 @@
                 let from = (page - 1) * size + 1;
                 let to = from + this.compareDataList.length - 1;
                 let total = Math.floor((args['total'] + size - 1) / size);
-                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to }
+                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to };
+                this.isLoading = false;
             });
             ipcRenderer.on('update-compare-one-view',(event, args) => {
                 if((this.clusterSubFrame == "compare" && this.mode == "cluster")
@@ -292,6 +293,7 @@
                     this.$refs.compareOneComponent.setSelectedSequence(args['selected_sequence']);
                     this.$refs.compareOneComponent.updateCompareView(args['dataSets'],args['data'],this.compareOneTarget);
                 }
+                this.isLoading = false;
             });
 
             ipcRenderer.on('set-scoring-function-names',(event, args) => {
@@ -380,7 +382,7 @@
                 ipcRenderer.send('load-clusters', [this.activeDataSet, this.clusterSearchConditions, this.preferences.view.list_size, this.pageOfClusters.current, threshold]);
             },
             getSequenceList: function() {
-                //this.isLoading = true;
+                this.isLoading = true;
                 let threshold = {
                     A: this.sequencesThreshold['A'],
                     C: this.sequencesThreshold['C'],
@@ -415,6 +417,7 @@
                 }
             },
             changeCompareOneTarget: function(target,seq){
+                this.isLoading = true;
                 this.compareOneTarget = target;
                 ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
             },
@@ -460,6 +463,7 @@
                 this.compareNumber = numberOfCompare;
             },
             updateCompareData: function() {
+                this.isLoading = true;
                 this.clusterThreshold['count'] = Math.ceil(this.allSequenceCount * this.clusterThreshold['ratio'] / 100.0);
                 this.$refs.compareComponent.loadCompareData();
             },
