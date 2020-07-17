@@ -1559,7 +1559,7 @@ class Analysis {
         });
     }
 
-    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings,scoringFunction, callback) {
+    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, scoringFunction, callback) {
         const self = this;
         if(scoringFunction){
             let sorter_func = function(dataSets, sequences, compareTarget){
@@ -1616,6 +1616,7 @@ class Analysis {
                     });
                 });
             }else{
+                //Compare One からの呼び出しは想定していない
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
@@ -1649,16 +1650,22 @@ class Analysis {
                         })
                     });
                 });
-            }else if(compareTarget == "cluster_all"){//Compare 用
+            }else if(compareTarget == "cluster_all"){
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
                         let start = (page - 1) * numberOfCompare;
                         let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
-                        if(sequences.length == 1 && filterSettings["conditions"]["key"]){
-                            sequences = [filterSettings["conditions"]["key"]];
+                        
+                        
+                        if(filterSettings["compare_one"]){
+                            if(filterSettings["conditions"]["key"]){
+                                sequences = [filterSettings["conditions"]["key"]];
+                            }else{
+                                console.log("??????????????? error in code?");
+                            }
                         }
-                        //let sequences = [];
+
                         self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
                             callback(dataSets, data);
                         })

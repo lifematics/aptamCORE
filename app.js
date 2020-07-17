@@ -251,11 +251,14 @@ app.on('ready', () => {
         if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず。Cluster representative の配列を基準にするため
             console.log("?????");
         }
+        //compare one からの呼び出しであることを示すフラグを filter settings に入れているがよくないかも
+        //次に何か加えることがあれば変更
         if(args["cluster_id"]){
             //Families パネルからの呼び出し
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
-                ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
+                ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}
+                ,'compare_one':true};
                 analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
                     //console.log(data);
                     window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
@@ -263,8 +266,9 @@ app.on('ready', () => {
             });
         }else{
             //Sequences パネルからの呼び出し
-            let filterSettings = {'conditions':{'key':key, primary_only:compareTarget == "cluster_representative"}
-            ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}};
+            let filterSettings = {'conditions':{'key':key, 'primary_only':compareTarget == "cluster_representative"}
+            ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}
+            ,'compare_one':true};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
                 //console.log(data);
                 window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
