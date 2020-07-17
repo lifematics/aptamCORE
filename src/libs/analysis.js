@@ -1612,7 +1612,6 @@ class Analysis {
                     self.getSequences(dataSetId, null, filterSettings["conditions"]["key"], null, 0, filterSettings["threshold"], function(result) {
                         let sequence_list = result.sequences;
                         let sequences = sequence_list.map((item) => { return item.sequence[1]; });
-                        //全エントリ取って最初のラウンドの ratio と最終ラウンドの ratio の差でソートする
                         sorter_func(dataSets, sequences, compareTarget);
                     });
                 });
@@ -1638,12 +1637,28 @@ class Analysis {
                         })
                     });
                 });
-            }else{
+            }else if(compareTarget == "cluster_representative"){
+
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
                         let start = (page - 1) * numberOfCompare;
                         let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
+                            callback(dataSets, data);
+                        })
+                    });
+                });
+            }else if(compareTarget == "cluster_all"){//Compare 用
+                self.getDataSets(function(dataSets) {
+                    self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
+                        let clusters = result.clusters;
+                        let start = (page - 1) * numberOfCompare;
+                        let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        if(sequences.length == 1 && filterSettings["conditions"]["key"]){
+                            sequences = [filterSettings["conditions"]["key"]];
+                        }
+                        //let sequences = [];
                         self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
                             callback(dataSets, data);
                         })
