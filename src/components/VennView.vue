@@ -2,8 +2,8 @@
   <div class="VennView" style="height: 400px;">
     <div class="export">
       <div class="col-sm-8">
-          <span><input type="radio" name="venn_target_type" id="radio_cluster" value="cluster" v-model="targetType"><label for="radio_cluster">Cluster</label></span>
-          <span style="margin-left:8px"><input type="radio" name="venn_target_type" id="radio_sequence" value="sequence" v-model="targetType"><label for="radio_sequence">Sequence</label></span>
+          <span>Focus on <input type="radio" name="venn_target_type" id="radio_cluster" value="cluster" v-model="targetType"><label for="radio_cluster">Clusters</label></span>
+          <span style="margin-left:8px"><input type="radio" name="venn_target_type" id="radio_sequence" value="sequence" v-model="targetType"><label for="radio_sequence">Sequences</label></span>
       </div>
     </div>  
     <div class="dataset-selector row">

@@ -99,12 +99,12 @@
                 config: null,
                 presets: null,
                 info: null,
-                activeDataSet: null,
                 dataSetList: [],
                 activeCluster: null,
                 clusterList: [],
                 clusterSearchConditions: { key: '', 'primary_only': true },
                 clusterThreshold: { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 },
+                activeDataSet: null,
                 sequenceSearchKey: '',
                 sequencesThreshold: { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 },
                 sequenceList: [],
@@ -151,6 +151,13 @@
             },
             mode:{
                 handler:function(){
+                    if(!(this.mode == "compare" || this.mode == "venn")){
+                        if(this.activeDataSet !== null ){
+                            this.getClusterList();
+                            this.getDatasetInfo();
+                            this.loadCompareOne("");
+                        }
+                    }
                     if(this.$refs.compareOneComponent){
                         this.$refs.compareOneComponent.setSelectedSequence(null);
                     }
@@ -201,7 +208,7 @@
 
             ipcRenderer.on('clusterListChanged', (event, result) => {
                 this.isLoading = false;
-                this.seqCountOfDataSet = result['sequence_count'];
+                this.seqCountOfDataSet = result['sequence_count'];//this.seqCountOfDataSet と this.allSequenceCount は同じデータとのこと
                 this.clusterList = result['clusters'];
                 let page = result['page'];
                 let listSize = parseInt(this.preferences.view.list_size, 10);
@@ -329,10 +336,10 @@
                 this.lbgThreshold = null;
                 this.clusterThreshold = { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 };
                 if(this.mode == "compare"){
-                    //this.updateCompareData();//activeDataset の更新で呼び出される
+                    //this.updateCompareData();//activeDataset の更新で呼び出されるのでここでは呼び出さない
                 }else{
-                    this.getClusterList();
-                    this.getDatasetInfo();
+                    this.getClusterList();//もしかしたら compare の時も呼び出しておいた方が良いかも？
+                    this.getDatasetInfo();//mode の handler からこれを呼び出した方が良いかも？
                     this.loadCompareOne("");
                 }
             },
