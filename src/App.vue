@@ -328,9 +328,13 @@
                 this.lbtThreshold = null;
                 this.lbgThreshold = null;
                 this.clusterThreshold = { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 };
-                this.getClusterList();
-                this.getDatasetInfo();
-                this.loadCompareOne("");
+                if(this.mode == "compare"){
+                    //this.updateCompareData();//activeDataset の更新で呼び出される
+                }else{
+                    this.getClusterList();
+                    this.getDatasetInfo();
+                    this.loadCompareOne("");
+                }
             },
             setLoading(b){
                 this.isLoading = b;

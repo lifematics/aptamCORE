@@ -1559,7 +1559,7 @@ class Analysis {
         });
     }
 
-    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings,scoringFunction, callback) {
+    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, scoringFunction, callback) {
         const self = this;
         if(scoringFunction){
             let sorter_func = function(dataSets, sequences, compareTarget){
@@ -1612,11 +1612,11 @@ class Analysis {
                     self.getSequences(dataSetId, null, filterSettings["conditions"]["key"], null, 0, filterSettings["threshold"], function(result) {
                         let sequence_list = result.sequences;
                         let sequences = sequence_list.map((item) => { return item.sequence[1]; });
-                        //全エントリ取って最初のラウンドの ratio と最終ラウンドの ratio の差でソートする
                         sorter_func(dataSets, sequences, compareTarget);
                     });
                 });
             }else{
+                //Compare One からの呼び出しは想定していない
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
@@ -1638,12 +1638,34 @@ class Analysis {
                         })
                     });
                 });
-            }else{
+            }else if(compareTarget == "cluster_representative"){
+
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
                         let start = (page - 1) * numberOfCompare;
                         let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
+                            callback(dataSets, data);
+                        })
+                    });
+                });
+            }else if(compareTarget == "cluster_all"){
+                self.getDataSets(function(dataSets) {
+                    self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
+                        let clusters = result.clusters;
+                        let start = (page - 1) * numberOfCompare;
+                        let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        
+                        
+                        if(filterSettings["compare_one"]){
+                            if(filterSettings["conditions"]["key"]){
+                                sequences = [filterSettings["conditions"]["key"]];
+                            }else{
+                                console.log("??????????????? error in code?");
+                            }
+                        }
+
                         self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
                             callback(dataSets, data);
                         })
@@ -2083,48 +2105,71 @@ class Analysis {
                                 let threshold={ratio: 0, A: 100,C: 100,G: 100,T: 100,lb_A: 0,lb_C: 0,lb_G: 0,lb_T: 0};
                                 //dataSet に含まれるクラスターを全部取ってフィルタする
                                 let current_func = function(sequence_and_count){
-                                    self.getClusters(dataSetId, conditions, 1000000000,1, threshold,
-                                        function(resultc) {
-                                            let flist2 = [];
-                                            for(let cc = 0;cc < resultc.clusters.length;cc++){
-                                                //部分一致なので完全一致をとる
-                                                if(resultc.clusters[cc].sequence[1] != skey){
-                                                    continue;
-                                                }
-                                                flist2.push(
-                                                    function(){
-                                                        self.getSequences(dataSetId,resultc.clusters[cc].id , "", null, null, threshold, function (result) {
-                                                            for(let ss = 0;ss < result.sequences.length;ss++){
-                                                                sequence_and_count.push(
-                                                                    [
-                                                                        result.sequences[ss].sequence[0]
-                                                                        +result.sequences[ss].sequence[1]
-                                                                        +result.sequences[ss].sequence[2]
-                                                                        ,result.sequences[ss].count
-                                                                    ]
-                                                                );
-                                                            }
-                                                            
-                                                            if(flist2.length == 0){
-                                                                let prev_func = func_list.pop();
-                                                                prev_func(sequence_and_count);
-                                                            }else{
-                                                                let prev_func = flist2.pop();
-                                                                prev_func();
-                                                            }
-                                                        });
+                                    if(target_type == "cluster"){
+                                        self.getClusters(dataSetId, conditions, 1000000000,1, threshold,
+                                            function(resultc) {
+                                                let flist2 = [];
+                                                for(let cc = 0;cc < resultc.clusters.length;cc++){
+                                                    //部分一致なので完全一致をとる
+                                                    if(resultc.clusters[cc].sequence[1] != skey){
+                                                        continue;
                                                     }
-                                                );
+                                                    flist2.push(
+                                                        function(){
+                                                            self.getSequences(dataSetId,resultc.clusters[cc].id , "", null, null, threshold, function (result) {
+                                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                                    sequence_and_count.push(
+                                                                        [
+                                                                            result.sequences[ss].sequence[0]
+                                                                            +result.sequences[ss].sequence[1]
+                                                                            +result.sequences[ss].sequence[2]
+                                                                            ,result.sequences[ss].count
+                                                                        ]
+                                                                    );
+                                                                }
+                                                                
+                                                                if(flist2.length == 0){
+                                                                    let prev_func = func_list.pop();
+                                                                    prev_func(sequence_and_count);
+                                                                }else{
+                                                                    let prev_func = flist2.pop();
+                                                                    prev_func();
+                                                                }
+                                                            });
+                                                        }
+                                                    );
+                                                }
+                                                if(flist2.length == 0){
+                                                    let prev_func = func_list.pop();
+                                                    prev_func(sequence_and_count);
+                                                }else{
+                                                    let prev_func = flist2.pop();
+                                                    prev_func();
+                                                }
                                             }
-                                            if(flist2.length == 0){
+                                        );
+                                    }else if(target_type == "sequence"){
+                                        self.getSequences(dataSetId, null, skey, 1000000000,1, threshold,
+                                            function(result) {
+                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                    if(result.sequences[ss].sequence[1] != skey){
+                                                        continue;
+                                                    }
+                                                    sequence_and_count.push(
+                                                        [
+                                                            result.sequences[ss].sequence[0]
+                                                            +result.sequences[ss].sequence[1]
+                                                            +result.sequences[ss].sequence[2]
+                                                            ,result.sequences[ss].count
+                                                        ]
+                                                    );
+                                                }
                                                 let prev_func = func_list.pop();
                                                 prev_func(sequence_and_count);
-                                            }else{
-                                                let prev_func = flist2.pop();
-                                                prev_func();
-                                            }
-                                        }
-                                    );
+                                            });
+                                    }else{
+                                        recordLog("??error in code??????");
+                                    }
                                 };
                                 func_list.push(current_func);
                             }
