@@ -23,7 +23,7 @@ var defaultFilePath_debug = null;
 //上昇傾向をとるためのスコア関数の設定
 scoringFunctionArr.push(
     [
-        "none"
+        "Ratio in the selected dataset"
         ,null
     ]
 );

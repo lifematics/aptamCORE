@@ -93,13 +93,19 @@ export default {
             handler: function () {
                 this.loadCompareData();
             },
-            deep: true
+            deep: true //いらないと思うが
         },
         dataList: {
             handler: function () {
                 this.updateCompareView();
             },
             deep: true
+        },
+        target: {
+            handler: function () {
+                this.loadCompareData();
+            },
+            deep: true //いらないと思うが
         },
     },
     mounted() {
@@ -163,7 +169,6 @@ export default {
         },
         loadCompareData: function() {
             if (this.numberOfCompare > 0) {
-                
                 this.$emit('setLoadingApp',true);
                 this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
                 let argss = {

@@ -2105,48 +2105,71 @@ class Analysis {
                                 let threshold={ratio: 0, A: 100,C: 100,G: 100,T: 100,lb_A: 0,lb_C: 0,lb_G: 0,lb_T: 0};
                                 //dataSet に含まれるクラスターを全部取ってフィルタする
                                 let current_func = function(sequence_and_count){
-                                    self.getClusters(dataSetId, conditions, 1000000000,1, threshold,
-                                        function(resultc) {
-                                            let flist2 = [];
-                                            for(let cc = 0;cc < resultc.clusters.length;cc++){
-                                                //部分一致なので完全一致をとる
-                                                if(resultc.clusters[cc].sequence[1] != skey){
-                                                    continue;
-                                                }
-                                                flist2.push(
-                                                    function(){
-                                                        self.getSequences(dataSetId,resultc.clusters[cc].id , "", null, null, threshold, function (result) {
-                                                            for(let ss = 0;ss < result.sequences.length;ss++){
-                                                                sequence_and_count.push(
-                                                                    [
-                                                                        result.sequences[ss].sequence[0]
-                                                                        +result.sequences[ss].sequence[1]
-                                                                        +result.sequences[ss].sequence[2]
-                                                                        ,result.sequences[ss].count
-                                                                    ]
-                                                                );
-                                                            }
-                                                            
-                                                            if(flist2.length == 0){
-                                                                let prev_func = func_list.pop();
-                                                                prev_func(sequence_and_count);
-                                                            }else{
-                                                                let prev_func = flist2.pop();
-                                                                prev_func();
-                                                            }
-                                                        });
+                                    if(target_type == "cluster"){
+                                        self.getClusters(dataSetId, conditions, 1000000000,1, threshold,
+                                            function(resultc) {
+                                                let flist2 = [];
+                                                for(let cc = 0;cc < resultc.clusters.length;cc++){
+                                                    //部分一致なので完全一致をとる
+                                                    if(resultc.clusters[cc].sequence[1] != skey){
+                                                        continue;
                                                     }
-                                                );
+                                                    flist2.push(
+                                                        function(){
+                                                            self.getSequences(dataSetId,resultc.clusters[cc].id , "", null, null, threshold, function (result) {
+                                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                                    sequence_and_count.push(
+                                                                        [
+                                                                            result.sequences[ss].sequence[0]
+                                                                            +result.sequences[ss].sequence[1]
+                                                                            +result.sequences[ss].sequence[2]
+                                                                            ,result.sequences[ss].count
+                                                                        ]
+                                                                    );
+                                                                }
+                                                                
+                                                                if(flist2.length == 0){
+                                                                    let prev_func = func_list.pop();
+                                                                    prev_func(sequence_and_count);
+                                                                }else{
+                                                                    let prev_func = flist2.pop();
+                                                                    prev_func();
+                                                                }
+                                                            });
+                                                        }
+                                                    );
+                                                }
+                                                if(flist2.length == 0){
+                                                    let prev_func = func_list.pop();
+                                                    prev_func(sequence_and_count);
+                                                }else{
+                                                    let prev_func = flist2.pop();
+                                                    prev_func();
+                                                }
                                             }
-                                            if(flist2.length == 0){
+                                        );
+                                    }else if(target_type == "sequence"){
+                                        self.getSequences(dataSetId, null, skey, 1000000000,1, threshold,
+                                            function(result) {
+                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                    if(result.sequences[ss].sequence[1] != skey){
+                                                        continue;
+                                                    }
+                                                    sequence_and_count.push(
+                                                        [
+                                                            result.sequences[ss].sequence[0]
+                                                            +result.sequences[ss].sequence[1]
+                                                            +result.sequences[ss].sequence[2]
+                                                            ,result.sequences[ss].count
+                                                        ]
+                                                    );
+                                                }
                                                 let prev_func = func_list.pop();
                                                 prev_func(sequence_and_count);
-                                            }else{
-                                                let prev_func = flist2.pop();
-                                                prev_func();
-                                            }
-                                        }
-                                    );
+                                            });
+                                    }else{
+                                        recordLog("??error in code??????");
+                                    }
                                 };
                                 func_list.push(current_func);
                             }
