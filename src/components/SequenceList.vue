@@ -37,6 +37,7 @@
             </div>
             <table class="sequence-table">
                 <tr>
+                    <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Sequence ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">NGS ID</th>
@@ -54,7 +55,9 @@
                     <th v-if="preferences.view.items.includes('variable_distance')">Levenshtein Distance</th>
                 </tr>
                 <tr v-for="(sequence, index) in sequenceList" :key="index" 
-                v-on:click="sequenceSelected(sequence.sequence[1],$event)">
+                v-bind:class="[sequence.id == selected ? 'selected' : '']"
+                v-on:click="sequenceSelected(sequence.sequence[1],$event);setSequenceSelected(sequence.id)">
+                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2])" value="■"></td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{sequence.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{sequence.name}}</td>
@@ -85,7 +88,7 @@
 </template>
 
 <script>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer,clipboard } = window.require('electron');
 
 export default {
     name: 'SequenceList',
@@ -116,6 +119,7 @@ export default {
     },
     data() {
         return {
+            selected:-1,
             search_key: '',
             threshold: {
                 ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0
@@ -142,6 +146,9 @@ export default {
                 this.$emit('loadCompareOne', seq);
             }
         },
+        setSequenceSelected: function(seqid) {
+            this.selected = seqid;
+        },
         searchSequencesThreshold: function() {
             let ddiv = document.getElementById("filter_seq_div");
             ddiv.style["background-color"] = "#ffffff";
@@ -166,50 +173,67 @@ export default {
         prevPage: function() {
             this.$emit('prevPage');
         },
+        copySequence: function(h,v,t){
+            let ret = "";
+            if(this.preferences.view.items.includes("head")){
+                ret += h;
+            }
+            if(this.preferences.view.items.includes("variable")){
+                ret += v;
+            }
+            if(this.preferences.view.items.includes("tail")){
+                ret += t;
+            }
+            clipboard.writeText(ret);
+        }
     }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-    margin: 40px 0 0;
-}
-ul {
-    list-style-type: none;
-    padding: 0;
-}
-li {
-    display: inline-block;
-    margin: 0 10px;
-}
-a {
-    color: #42b983;
-}
-.allow-scroll {
-    overflow: scroll;
-}
-/* display:block にしても横スクロールバーがなぜか表示されない・・・
-.allow-scroll::-webkit-scrollbar {
-  display: none;
-}
-*/
+    h3 {
+        margin: 40px 0 0;
+    }
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+    li {
+        display: inline-block;
+        margin: 0 10px;
+    }
+    a {
+        color: #42b983;
+    }
+    .allow-scroll {
+        overflow: scroll;
+    }
+    /* display:block にしても横スクロールバーがなぜか表示されない・・・
+    .allow-scroll::-webkit-scrollbar {
+    display: none;
+    }
+    */
 
-.filter .keyword input[type="text"] {
-    width: 480px;
-}
-.filter .keyword input[type="number"] {
-    width: 100px;
-}
-.filter .keyword input[type="checkbox"] {
-    width: 100px;
-}
-.filter span.label {
-    display: inline-block;
-    width: 60px;
-}
-.filter .ratio input {
-    width: 60px;
-}
+    tr.selected {
+        background-color: #BABABA;
+    }
+
+    .filter .keyword input[type="text"] {
+        width: 480px;
+    }
+    .filter .keyword input[type="number"] {
+        width: 100px;
+    }
+    .filter .keyword input[type="checkbox"] {
+        width: 100px;
+    }
+    .filter span.label {
+        display: inline-block;
+        width: 60px;
+    }
+    .filter .ratio input {
+        width: 60px;
+    }
 
 </style>
