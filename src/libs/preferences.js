@@ -6,6 +6,7 @@ const ElectronPreferences = require('electron-preferences');
 let defaultPreferences = {
     "view": {
         "items": [
+            "copy_button",
             "id",
             "ngs_id",
             "head",
@@ -90,6 +91,7 @@ let preferences_hs = {
                                 'key': 'items',
                                 'type': 'checkbox',
                                 'options': [
+                                    {'label': 'Copy Sequence Button', 'value': 'copy_button'},
                                     {'label': 'ID', 'value': 'id'},
                                     {'label': 'NGS ID', 'value': 'ngs_id'},
                                     {'label': 'Head', 'value': 'head'},
