@@ -9,7 +9,7 @@ const zlib     = require('zlib');
 const { Exception } = require('handlebars');
 
 const MERGER_CMD = '/tools/flash2';
-const MERGER_ARGS = ' -z --allow-outies --max-overlap 1000 ';
+const MERGER_ARGS = ' -z --max-overlap 1000 ';
 //const FILTER_CMD = '/tools/filter';
 const FILTER_CMD = '/tools/filter_gz';
 const CLUSTER_CMD = '/tools/cd-hit-est';
