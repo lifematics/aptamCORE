@@ -37,6 +37,7 @@
             </div>
             <table class="sequence-table">
                 <tr>
+                    <th class="index">Copy</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Sequence ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">NGS ID</th>
@@ -55,6 +56,7 @@
                 </tr>
                 <tr v-for="(sequence, index) in sequenceList" :key="index" 
                 v-on:click="sequenceSelected(sequence.sequence[1],$event)">
+                    <td><input type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2])" value="■"></td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{sequence.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{sequence.name}}</td>
@@ -85,7 +87,7 @@
 </template>
 
 <script>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer,clipboard } = window.require('electron');
 
 export default {
     name: 'SequenceList',
@@ -166,6 +168,19 @@ export default {
         prevPage: function() {
             this.$emit('prevPage');
         },
+        copySequence: function(h,v,t){
+            let ret = "";
+            if(this.preferences.view.items.includes("head")){
+                ret += h;
+            }
+            if(this.preferences.view.items.includes("variable")){
+                ret += v;
+            }
+            if(this.preferences.view.items.includes("tail")){
+                ret += t;
+            }
+            clipboard.writeText(ret);
+        }
     }
 }
 </script>

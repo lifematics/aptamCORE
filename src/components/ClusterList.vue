@@ -51,6 +51,7 @@
 <!--            </div>-->
             <table class="sequence-table">
                 <tr>
+                    <th class="index">Copy</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Family ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">Representative NGS ID</th>
@@ -69,6 +70,7 @@
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
                          v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
+                    <td><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2])" value="■"></td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -98,7 +100,7 @@
 </template>
 
 <script>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer, clipboard } = window.require('electron');
 
 export default {
     name: 'ClusterList',
@@ -202,6 +204,19 @@ export default {
             for (let i = 0; i < nodeList.length; ++i) {
                 nodeList[i].style.backgroundColor = newColor;
             }
+        },
+        copySequence: function(h,v,t){
+            let ret = "";
+            if(this.preferences.view.items.includes("head")){
+                ret += h;
+            }
+            if(this.preferences.view.items.includes("variable")){
+                ret += v;
+            }
+            if(this.preferences.view.items.includes("tail")){
+                ret += t;
+            }
+            clipboard.writeText(ret);
         }
     }
 }
