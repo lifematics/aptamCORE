@@ -272,6 +272,10 @@ class Analysis {
     }
 
     contFastqReads(filename,callback){
+        if(filename.length == 0){
+            callback();
+            return;
+        }
         let that = this;
         let count = 0;
         const gzcheck = RegExp('\\.gz$');

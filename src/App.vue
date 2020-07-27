@@ -171,6 +171,9 @@
             ipcRenderer.on('presetsChanged', (event, presets) => {
                 this.presets = presets;
             });
+            ipcRenderer.on('setLoading', (event, arg) => {
+                this.isLoading = arg;
+            });
             ipcRenderer.on('analysisChanged', (event, config) => {
                 this.config = config;
                 if (!config) {

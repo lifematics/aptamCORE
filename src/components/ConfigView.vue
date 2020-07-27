@@ -11,6 +11,10 @@
             </div> 
         </div>
         
+        <div class="preset">
+            <button @click="estimateFinishTime">Estimate</button>
+            Estimated Processing Time: <span id="span_finish_time">N/A</span>
+        </div>
         <hr/>
 
         <h2>Parameters</h2>
@@ -155,6 +159,7 @@
         },
         destroyed: function(){
           ipcRenderer.removeAllListeners('addFastqFiles');
+          ipcRenderer.removeAllListeners('set-etf');
         },
         mounted: function(){
             let that = this;
@@ -165,9 +170,16 @@
                 that.addFastqInList(args["fastq_list"],args["start_pos"],args["file_label"],args["overwrite"]);
             });
 
+            ipcRenderer.on('set-etf', (event,arg) => {
+                document.getElementById("span_finish_time").innerHTML = arg;
+            });
+
             that.loadDefaultPreset();
         },
         methods: {
+            estimateFinishTime:function(){
+                ipcRenderer.send('estimate-finish-time',[this.config]);
+            },
             removeFastqDDEvent:function(target){
                 target.removeEventListener();
             },
