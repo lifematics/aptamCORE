@@ -1,6 +1,3 @@
-/**
- * Created by doi on 2018/12/30.
- */
 <template>
     <div class="CompareView">
         <div class="header-control container">
@@ -8,14 +5,16 @@
                 <div class="col-sm-4">Number of Sequences: <input type="text" v-model="compareNumber" v-on:change="changeNumberOfCompare" /></div>
                 <div class="col-sm-4">
                     <div class="page-control">
-                        <button :disabled="page.current <= 1" v-on:click="prevPage">Prev</button>
+                        <button id="button_compare_prevpage" :disabled="page.current <= 1" v-on:click="prevPage">Prev</button>
                         {{ page.current }} / {{ page.total }}
-                        <button :disabled="page.current >= page.total" v-on:click="nextPage">Next</button>
+                        <button id="button_compare_nextpage" :disabled="page.current >= page.total" v-on:click="nextPage">Next</button>
                     </div>
                 </div>
-                <div class="col-sm-4"><button v-on:click="exportAsCsv" value="Export">Export</button></div>
+                <div class="col-sm-4"><button id="button_compare_exportcsv" v-on:click="exportAsCsv" value="Export">Export</button></div>
             </div>
-            <div class="filter" id="filterdiv">
+            
+            <div class="switch_head" v-on:click="changeVisibility('filter_div')"><div id="filter_div_switch" class="switch">+</div> Filters:</div>
+            <div class="filter" id="filter_div" style="display:none;">
                 <div class="row">
                     <div class="col-sm-9 keyword">
                         <span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground" v-model="conditions.key" placeholder='Search Key'/>
@@ -31,10 +30,21 @@
                 </div>
                 <div class="col-sm-4"><button v-on:click="filterGraphs" value="Export">Filter</button></div>
             </div>
-            <div class="row" id="compare_target_div" style="margin-top:5px">
-                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-on:change="changeCompareTargetProp" v-model="compareTarget_This" value="cluster_representative" checked> <label for="cluster_representative">Cluster Representatives</label> 
-                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_cluster_all" v-on:change="changeCompareTargetProp"  v-model="compareTarget_This" value="cluster_all"> <label for="radio_cluster_all">Cluster Members</label> 
-                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_sequences" v-on:change="changeCompareTargetProp"  v-model="compareTarget_This" value="sequences"> <label for="radio_sequences">Sequences</label> 
+            <div class="switch_head" v-on:click="changeVisibility('scoring_function_div')" ><div id="scoring_function_div_switch" class="switch">+</div> Scoring Function:</div>
+            <div id="scoring_function_div" style="display:none;">
+                <table>
+                    <tr v-for="(ff, index) in scoringFunctionNames" :key="index">
+                    <td><input type="radio" name="scoring_function" style="margin-left:10px;margin-right:10px;" v-on:change="changeScoringFunctionProp" :value="index" :id="'radio_sfunc'+index" v-model="scoringFunctionIndex"> <label :for="'radio_sfunc'+index">{{ff}}</label></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="switch_head" v-on:click="changeVisibility('compare_target_div')"><div id="compare_target_div_switch" class="switch">+</div>Target Type:</div>
+            <div id="compare_target_div" style="margin-top:5px;display:none;">
+                <div>
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_representative" v-model="compareTarget_This" value="cluster_representative" checked> <label for="radio_representative">Cluster Representatives</label> 
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_cluster_all" v-model="compareTarget_This" value="cluster_all"> <label for="radio_cluster_all">Cluster Members</label> 
+                <input type="radio" name="compare_target" style="margin-left:10px;margin-right:10px;" id="radio_sequences" v-model="compareTarget_This" value="sequences"> <label for="radio_sequences">Sequences</label> 
+                </div>
             </div> 
         </div>
         <div class="graph-pane" v-for="(graph, index) in chartData" :key="index" :id="graph.id" style="float: left">
@@ -57,7 +67,6 @@ export default {
     props: {
         preferences: Object,
         numberOfCompare: Number,
-        compareTarget: String,
         target: Number,
         totalCount: Number,
         page: Object,
@@ -67,26 +76,36 @@ export default {
         graphHeight: Number,
         dataSets: Array,
         dataList: Array,
+        scoringFunctionNames:Array,
     },
     data() {
         return {
             compareNumber: this.numberOfCompare,
-            compareTarget_This:this.compareTarget,//親の変数にバインドすると値の更新のタイミングが分からなかったので別変数を作った。。。
+            scoringFunction:[],
+            compareTarget_This:"cluster_representative",
             chartData: [],
             options: [],
+            scoringFunctionIndex:0,
         }
     },
     watch: {
-        target: {
-            handler: function() {
+        compareTarget_This: {
+            handler: function () {
                 this.loadCompareData();
-            }
+            },
+            deep: true //いらないと思うが
         },
         dataList: {
             handler: function () {
                 this.updateCompareView();
             },
             deep: true
+        },
+        target: {
+            handler: function () {
+                this.loadCompareData();
+            },
+            deep: true //いらないと思うが
         },
     },
     mounted() {
@@ -100,29 +119,33 @@ export default {
             }
         },
         colorFilterBackground: function() {
-            let ddiv = document.getElementById("filterdiv");
+            let ddiv = document.getElementById("filter_div");
             ddiv.style["background-color"] = "#ffaaaa";
         },
         filterGraphs: function() {
-            let ddiv = document.getElementById("filterdiv");
+            let ddiv = document.getElementById("filter_div");
             ddiv.style["background-color"] = "#ffffff";
             if (this.numberOfCompare > 0) {
-                this.$emit('updateCompareData');
+                this.loadCompareData();
             }
         },
-        changeCompareTargetProp: function() {
-            this.$emit('setCompareTargetApp', this.compareTarget_This);
+        changeScoringFunctionProp: function() {
             this.loadCompareData();
-        },
-        exportAsCsv: function() {
-            this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
-            ipcRenderer.send('export-compare-data', {
-                "dataset_id": this.target,
-                "number_of_compare": this.numberOfCompare,
-                "page": this.page.current,
-                "compare_target": this.compareTarget,
-                "filter_settings": {"conditions":this.conditions,"threshold":this.threshold}
-            });   
+        },        
+        changeVisibility:function(targetname){
+            let ddiv = document.getElementById(targetname);
+            let sdiv = document.getElementById(targetname+"_switch");
+            if(ddiv.style["display"] == "none"){
+                ddiv.style["display"] = "block"
+                if(sdiv){
+                    sdiv.innerText = "-";
+                }
+            }else{
+                ddiv.style["display"] = "none"
+                if(sdiv){
+                    sdiv.innerText = "+";
+                }
+            }
         },
         copySequence: function(event) {
             let index = event.target.name;
@@ -133,9 +156,32 @@ export default {
                 clipboard.writeText("undefined");
             }
         },
+        exportAsCsv: function() {
+            this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
+            ipcRenderer.send('export-compare-data', {
+                "dataset_id": this.target,
+                "number_of_compare": this.numberOfCompare,
+                "page": this.page.current,
+                "compare_target": this.compareTarget_This,
+                "filter_settings": {"conditions":this.conditions,"threshold":this.threshold},
+                "scoring_function":this.scoringFunctionNames[this.scoringFunctionIndex]
+            });   
+        },
         loadCompareData: function() {
             if (this.numberOfCompare > 0) {
-                this.$emit('updateCompareData');
+                this.$emit('setLoadingApp',true);
+                this.threshold['count'] = Math.ceil(this.totalCount * this.threshold['ratio'] / 100.0);
+                let argss = {
+                        "dataset_id": this.target,
+                        "number_of_compare": this.numberOfCompare,
+                        "page": this.page.current,
+                        "compare_target": this.compareTarget_This,
+                        "filter_settings": {"conditions":this.conditions,"threshold":this.threshold},
+                        "scoring_function":this.scoringFunctionNames[this.scoringFunctionIndex]
+                };
+                ipcRenderer.send('load-compare-data',
+                    argss
+                 );
             }
         },
         updateCompareView: function() {
@@ -183,6 +229,7 @@ export default {
                 });
                 let item = {
                     id: 'graph-' + dataIndex,
+                    labels:[''],
                     datasets: dataEntryList,
                 };
                 let option = {
@@ -252,6 +299,22 @@ a {
 
 .copy-button {
     float: right;
+}
+
+div.switch {
+    width: 30px;
+    text-align: center;
+    cursor:pointer;
+    margin-left:-15px;
+}
+div.switch_head{
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
 }
 
 div.filter {

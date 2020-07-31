@@ -1,6 +1,3 @@
-/**
- * Created by doi on 2018/12/30.
- */
 <template>
     <div class="ClusterList">
         <div>
@@ -9,8 +6,8 @@
                     <div class="row" id="subframediv">
                         <h2>Families</h2>
                         <span style="margin-top:10px">
-                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_member" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_member">Member</label> 
-                        <input type="radio" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" id="radio_compare" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_compare">Compare</label> 
+                        <input type="radio" id="radio_clusterlist_subframe_member" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_clusterlist_subframe_member">Member</label> 
+                        <input type="radio" id="radio_clusterlist_subframe_compare" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_clusterlist_subframe_compare">Compare</label> 
                         </span>
                     </div> 
                 </div>
@@ -23,7 +20,7 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="">
-                        <button v-on:click="exportAsCsv" value="Export">Export</button>
+                        <button v-on:click="exportFile" id="button_clusterlist_export" value="Export">Export</button>
                     </div>
                 </div>
             </div>
@@ -54,6 +51,7 @@
 <!--            </div>-->
             <table class="sequence-table">
                 <tr>
+                    <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Family ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">Representative NGS ID</th>
@@ -72,6 +70,7 @@
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
                          v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
+                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2])" value="■"></td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -101,7 +100,7 @@
 </template>
 
 <script>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer, clipboard } = window.require('electron');
 
 export default {
     name: 'ClusterList',
@@ -180,7 +179,7 @@ export default {
                 this.$emit('loadCompareOne',  this.selectedSequence);
             }
         },
-        exportAsCsv: function() {
+        exportFile: function() {
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
         },
         searchClusterThreshold: function() {
@@ -195,6 +194,7 @@ export default {
             this.$emit('prevPage');
         },
         updateBaseColorAll() {
+            this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span'), "#ffffff");
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-A'), this.preferences.color.a);
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-C'), this.preferences.color.c);
             this.updateBaseColor(document.querySelectorAll('div.ClusterList table.sequence-table tr td span.base-G'), this.preferences.color.g);
@@ -204,6 +204,19 @@ export default {
             for (let i = 0; i < nodeList.length; ++i) {
                 nodeList[i].style.backgroundColor = newColor;
             }
+        },
+        copySequence: function(h,v,t){
+            let ret = "";
+            if(this.preferences.view.items.includes("head")){
+                ret += h;
+            }
+            if(this.preferences.view.items.includes("variable")){
+                ret += v;
+            }
+            if(this.preferences.view.items.includes("tail")){
+                ret += t;
+            }
+            clipboard.writeText(ret);
         }
     }
 }

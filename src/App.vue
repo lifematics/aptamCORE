@@ -5,34 +5,31 @@
                  :is-full-page="true"></loading>
         <home v-if="mode == 'home'"></home>
         <div class="wrapper" v-else>
-
             <div class="rightPanel" >
                 <div class="content">
                     <config-view v-if="mode == 'config'" :config="config" :hasLicense="hasLicense" :presets="presets" v-on:configChanged="configChanged"></config-view>
                     <info-view v-if="mode == 'info'" :config="config" :info="info" ></info-view>
                     <multipane layout="horizontal" v-if="mode == 'cluster'">
-                        <div :style="{ height: '400px', overflow: 'scroll' }">
+                        <div :style="{ maxHeight: '600px', overflow: 'scroll' }">
                             <cluster-list ref="clusterListComponent" :config="config" :clusterSubFrame:="clusterSubFrame" v-on:loadCompareOne="loadCompareOne" :preferences="preferences" :totalCount="seqCountOfDataSet" :clusterList="clusterList" :selected="activeCluster" :dataSetId="activeDataSet" v-on:clusterChanged="clusterChanged" v-on:changeClusterSubFrame="changeClusterSubFrame"  :clusterSearchConditions="clusterSearchConditions" :page="pageOfClusters" :sequencesThreshold="sequencesThreshold" :clusterThreshold="clusterThreshold" v-on:nextPage="nextClusterPage" v-on:prevPage="prevClusterPage" v-on:searchClusterThreshold="searchClusterThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
-                        <div :style="{  height: '400px', overflow: 'scroll' }">
+                        <div :style="{ maxHeight: '600px', overflow: 'scroll' }">
                             <compare-one-view  ref="compareOneComponent"  v-if="clusterSubFrame == 'compare'" v-on:exportCompareOneCSV="exportCompareOneCSV" v-on:changeCompareOneTarget="changeCompareOneTarget"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight"></compare-one-view>
                             <sequence-list  v-if="clusterSubFrame == 'member'" v-on:loadCompareOne="loadCompareOne" :config="config" :mode="mode" :preferences="preferences" :totalCount="seqCountOfCluster" :sequenceList="sequenceList" :dataSetId="activeDataSet" :clusterId="activeCluster" :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :page="pageOfSequences" v-on:nextPage="nextSequencePage" v-on:prevPage="prevSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
-                        <multipane-resizer></multipane-resizer>
                     </multipane>
                     <multipane layout="horizontal" v-if="mode == 'sequence'">
-                        <div :style="{ height: '400px', overflow: 'scroll' }">
+                        <div :style="{ maxHeight: '600px', overflow: 'scroll' }">
                         <sequence-list :preferences="preferences"  v-on:clusterChanged="clusterChanged" v-on:loadCompareOne="loadCompareOne" :mode="mode" :totalCount="allSequenceCount" :sequenceList="allSequenceList" :dataSetId="activeDataSet" :clusterId=null :sequenceSearchKey="sequenceSearchKey" :sequencesThreshold="sequencesThreshold" :aThreshold="aThreshold" :cThreshold="cThreshold" :tThreshold="tThreshold" :gThreshold="gThreshold" :clusterThreshold="clusterThreshold" :page="pageOfAllSequences" v-on:nextPage="nextAllSequencePage" v-on:prevPage="prevAllSequencePage" v-on:searchSequencesThreshold="searchSequencesThreshold"/>
                         </div>
                         <multipane-resizer></multipane-resizer>
-                        <div :style="{  height: '400px', overflow: 'scroll' }">
+                        <div :style="{ maxHeight: '600px',overflow: 'scroll' }">
                             <compare-one-view  ref="compareOneComponent" v-on:changeCompareOneTarget="changeCompareOneTarget" v-on:exportCompareOneCSV="exportCompareOneCSV"  :preferences="preferences"  :conditions="clusterSearchConditions" :threshold="clusterThreshold"  :target="activeDataSet" :graphWidth="compareOneWidth" :graphHeigh="compareOneHeight"></compare-one-view>
                         </div>
-                        <multipane-resizer></multipane-resizer>
                     </multipane>
-                    <compare-view v-if="mode == 'compare'" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :compareTarget="compareTarget" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:setCompareTargetApp="setCompareTargetApp" v-on:changeCompareNumber="changeCompareNumber" v-on:updateCompareData="updateCompareData"></compare-view>
-                    <venn-view v-if="mode == 'venn'"></venn-view>
+                    <compare-view v-if="mode == 'compare'" ref="compareComponent" :scoringFunctionNames="scoringFunctionNames" :preferences="preferences" :totalCount="allSequenceCount" :conditions="clusterSearchConditions" :threshold="clusterThreshold" :target="activeDataSet" :dataSets="compareDataSets" :dataList="compareDataList" :numberOfCompare="compareNumber" :page="pageOfCompares" :graphWidth="compareWidth" :graphHeigh="compareHeight" v-on:nextPage="nextComparePage" v-on:prevPage="prevComparePage" v-on:changeCompareNumber="changeCompareNumber"  v-on:setLoadingApp="setLoading"></compare-view>
+                    <venn-view v-if="mode == 'venn'" v-on:setLoadingApp="setLoading"></venn-view>
                 </div>
             </div>
 
@@ -40,26 +37,25 @@
                 <div class="content">
                     <data-set-list ref="datasetListComponent" :selected="activeDataSet" v-on:dataSetChanged="dataSetChanged"/>
                     <div class="button-container">
-                        <button v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
+                        <button id="button_analyze" v-on:click="analyze" value="Analyze" v-bind:disabled="mode != 'config'">Analyze</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
+                        <button id="button_information" v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
+                        <button id="button_families" v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
+                        <button id="button_sequences" v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
+                        <button id="button_compare" v-on:click="compare" value="Compare" v-bind:disabled="mode == 'config' || mode == 'home'">Compare</button>
                     </div>
                     <div class="button-container">
-                        <button v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
+                        <button id="button_venn" v-on:click="venn" value="Venn" v-bind:disabled="mode == 'config' || mode == 'home'">Venn Diagram</button>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </template>
@@ -103,12 +99,12 @@
                 config: null,
                 presets: null,
                 info: null,
-                activeDataSet: null,
                 dataSetList: [],
                 activeCluster: null,
                 clusterList: [],
                 clusterSearchConditions: { key: '', 'primary_only': true },
                 clusterThreshold: { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 },
+                activeDataSet: null,
                 sequenceSearchKey: '',
                 sequencesThreshold: { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 },
                 sequenceList: [],
@@ -127,9 +123,9 @@
                 compareOneTarget:'cluster_representative',
                 hasLicense:false,
 
+                scoringFunctionNames:[],
                 compareNumber: 5,
                 clusterSubFrame:"member",
-                compareTarget:"cluster_representative",
                 mode: 'home',
                 pageOfClusters: {'total': 1, 'current': 1, 'from': 1, 'to': 1},
                 pageOfSequences: {'total': 1, 'current': 1, 'from': 1, 'to': 1},
@@ -155,6 +151,13 @@
             },
             mode:{
                 handler:function(){
+                    if(!(this.mode == "compare" || this.mode == "venn")){
+                        if(this.activeDataSet !== null ){
+                            this.getClusterList();
+                            this.getDatasetInfo();
+                            this.loadCompareOne("");
+                        }
+                    }
                     if(this.$refs.compareOneComponent){
                         this.$refs.compareOneComponent.setSelectedSequence(null);
                     }
@@ -198,9 +201,14 @@
                     this.dataSetChanged(this.dataSetList[0].id);
                 }
             });
+            
+            ipcRenderer.on('changeDataset', (event, args) => {
+                this.dataSetChanged(args["id"]);
+            });
+
             ipcRenderer.on('clusterListChanged', (event, result) => {
                 this.isLoading = false;
-                this.seqCountOfDataSet = result['sequence_count'];
+                this.seqCountOfDataSet = result['sequence_count'];//this.seqCountOfDataSet と this.allSequenceCount は同じデータとのこと
                 this.clusterList = result['clusters'];
                 let page = result['page'];
                 let listSize = parseInt(this.preferences.view.list_size, 10);
@@ -219,7 +227,6 @@
                 let to = from + this.sequenceList.length - 1;
                 let total = Math.floor((result['variant_count'] + listSize - 1) / listSize);
                 this.pageOfSequences = { 'total': total, 'current': page, 'from': from, 'to': to };
-
             });
             ipcRenderer.on('allSequenceListChanged', (event, result) => {
                 this.isLoading = false;
@@ -284,7 +291,8 @@
                 let from = (page - 1) * size + 1;
                 let to = from + this.compareDataList.length - 1;
                 let total = Math.floor((args['total'] + size - 1) / size);
-                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to }
+                this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to };
+                this.isLoading = false;
             });
             ipcRenderer.on('update-compare-one-view',(event, args) => {
                 if((this.clusterSubFrame == "compare" && this.mode == "cluster")
@@ -292,6 +300,11 @@
                     this.$refs.compareOneComponent.setSelectedSequence(args['selected_sequence']);
                     this.$refs.compareOneComponent.updateCompareView(args['dataSets'],args['data'],this.compareOneTarget);
                 }
+                this.isLoading = false;
+            });
+
+            ipcRenderer.on('set-scoring-function-names',(event, args) => {
+                this.scoringFunctionNames = args;
             });
 
             this.getDataSetList();
@@ -322,8 +335,16 @@
                 this.lbtThreshold = null;
                 this.lbgThreshold = null;
                 this.clusterThreshold = { count: 0, ratio: 0, A: 100, C: 100, G: 100, T: 100 , lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0 };
-                this.getClusterList();
-                this.getDatasetInfo();
+                if(this.mode == "compare"){
+                    //this.updateCompareData();//activeDataset の更新で呼び出されるのでここでは呼び出さない
+                }else{
+                    this.getClusterList();//もしかしたら compare の時も呼び出しておいた方が良いかも？
+                    this.getDatasetInfo();//mode の handler からこれを呼び出した方が良いかも？
+                    this.loadCompareOne("");
+                }
+            },
+            setLoading(b){
+                this.isLoading = b;
             },
             clusterChanged: function(id) {
                 this.activeCluster = id.toString();
@@ -372,7 +393,7 @@
                 ipcRenderer.send('load-clusters', [this.activeDataSet, this.clusterSearchConditions, this.preferences.view.list_size, this.pageOfClusters.current, threshold]);
             },
             getSequenceList: function() {
-                //this.isLoading = true;
+                this.isLoading = true;
                 let threshold = {
                     A: this.sequencesThreshold['A'],
                     C: this.sequencesThreshold['C'],
@@ -407,6 +428,7 @@
                 }
             },
             changeCompareOneTarget: function(target,seq){
+                this.isLoading = true;
                 this.compareOneTarget = target;
                 ipcRenderer.send('load-compare-one', {"selected_sequence":seq,"dataset_id":this.activeDataSet,"cluster_id":this.activeCluster,"key":this.compareOneSeq,"target":this.compareOneTarget});
             },
@@ -451,21 +473,10 @@
             changeCompareNumber: function(numberOfCompare) {
                 this.compareNumber = numberOfCompare;
             },
-            setCompareTargetApp:function(value) {
-                this.compareTarget = value;
-            },
             updateCompareData: function() {
+                this.isLoading = true;
                 this.clusterThreshold['count'] = Math.ceil(this.allSequenceCount * this.clusterThreshold['ratio'] / 100.0);
-                ipcRenderer.send('load-compare-data',
-                    {
-                        "dataset_id":this.activeDataSet,
-                        "number_of_compare":this.compareNumber,
-                        "page":this.pageOfCompares.current,
-                        "compare_target":this.compareTarget,
-                        "filter_settings": {"conditions":this.clusterSearchConditions
-                        ,"threshold":this.clusterThreshold}
-                    }
-                 );
+                this.$refs.compareComponent.loadCompareData();
             },
             analyze: function() {
                 ipcRenderer.send('analyze', [this.config]);

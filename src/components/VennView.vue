@@ -1,9 +1,11 @@
-/**
-* Created by doi on 2018/12/30.
-*/
 <template>
   <div class="VennView" style="height: 400px;">
-
+    <div class="export">
+      <div class="col-sm-8">
+          <span>Focus on <input type="radio" name="venn_target_type" id="radio_cluster" value="cluster" v-model="targetType"><label for="radio_cluster">Clusters</label></span>
+          <span style="margin-left:8px"><input type="radio" name="venn_target_type" id="radio_sequence" value="sequence" v-model="targetType"><label for="radio_sequence">Sequences</label></span>
+      </div>
+    </div>  
     <div class="dataset-selector row">
       <div class="col-sm-3" v-for="(item, index) in selectedVenTarget" :key="index">
         <input type="checkbox" :value="item.id" :id="'checkbox-' + item.id" v-model="item.value"/>
@@ -15,7 +17,6 @@
 
     <div class="export">
       <div>Common Sequence Export</div>
-
       <div class="export-item">
         <div v-for="(data, index) in dataSets" :key="index">
           <span>{{data.name}}</span>
@@ -26,22 +27,24 @@
       </div>
 
       <div class="export-item">
-        <button v-on:click="exportSequences">Export</button>
+        <button id="button_venn_export_combination" v-on:click="exportSequences">Export</button>
+        <button id="button_venn_export_fastq_combination" v-on:click="exportSequencesFastq">Create Fastq</button>
       </div>
 
       <div class="export-end"></div>
     </div>
-
-    <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list">
-      <div class="col-sm-2">
-        <button type="button" @click="exportVennSequence(area.sets)">Export</button>
+    <div class="row" style="margin-left:20px;text-weight:bold;">List combination among <input type="text" style="width:60px;margin-left:8px;margin-right:8px;" v-model="clusterNumberFilter" v-on:keyup="changeClusterNumberFilter" /> datasets.</div>
+    <div v-for="(area, index) in selectedVennData" :key="index" class="row area-list" :id="'venn_combination_'+index"  :style="'padding-top:4px;padding-bottom:4px;background-color:rgb('+(255-index%2*32)+','+(255-index%2*32)+',255)'">
+      <div class="col-sm-4">
+        <button type="button" :id="'button_venn_export_table_'+index" @click="exportVennSequence(area.sets)">Export</button>
+        <button type="button" :id="'button_venn_export_fastq_table_'+index" @click="exportVennSequenceFastq(area.ids)">Create Fastq</button>
       </div>
-      <div class="col-sm-2">{{area.size}} Families</div>
+      <div class="col-sm-2" v-if="targetType == 'cluster'">{{area.size}} Clusters</div>
+      <div class="col-sm-2" v-if="targetType == 'sequence'">{{area.size}} Sequences</div>
       <div class="col-sm-8">
         <span v-for="(item, i) in area.sets" :key="i"> {{item}} </span>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -62,9 +65,11 @@
       return {
         vennData: Array,
         dataSets: Array,
+        targetType:"cluster",
         selectedVenTarget: Array,
         selectedVennData: Array,
         exportSettings: Object,
+        clusterNumberFilter:""
       }
     },
     
@@ -77,8 +82,9 @@
         self.dataSets = args['datasets'];
         self.selectedVenTarget = self.dataSets.map((dataSet) => { return {id: dataSet.id, name: dataSet.name, value: true} });
         self.vennData = args['counts'];
+        self.$emit("setLoadingApp",false);
       });
-      ipcRenderer.send('get-venn-data', []);
+      ipcRenderer.send('get-venn-data', {"target_type":this.targetType});
     },
     watch: {
       dataSets() {
@@ -92,7 +98,7 @@
       vennData() {
         let div = d3.select("#venn");
         this.updateVennDiagram();
-
+        let self = this;
         var tooltip = d3.select("body").append("div").attr("class", "tooltip");
         div.selectAll("g")
                 .on("mouseover", function(d) {
@@ -101,7 +107,12 @@
 
                   // Display a tooltip with the current size
                   tooltip.transition().duration(400).style("opacity", .9);
-                  tooltip.text(d.size + " Families");
+                  
+                  if(self.targetType == "cluster"){
+                    tooltip.text(d.size + " Clusters");
+                  }else{
+                    tooltip.text(d.size + " Sequences");
+                  }
 
                   // highlight the current path
                   var selection = d3.select(this).transition("tooltip").duration(400);
@@ -131,6 +142,14 @@
         },
         deep: true,
       },
+      targetType: {
+        handler: function() {
+          this.$emit("setLoadingApp",true);
+          ipcRenderer.send('get-venn-data', {"target_type":this.targetType});
+        },
+        deep: true,
+      },
+      
     },
     methods: {
       updateVennDiagram: function() {
@@ -148,10 +167,48 @@
         div.datum(this.selectedVennData).call(chart);
       },
       exportVennSequence: function(sets) {
-        ipcRenderer.send('export-intersection-sequence-data', sets);
+        ipcRenderer.send('export-intersection-sequence-data',{"settings":sets, "target_type":this.targetType});
       },
       exportSequences: function() {
-        ipcRenderer.send('export-overlapped-sequences', this.exportSettings);
+        ipcRenderer.send('export-overlapped-sequences',  {"settings": this.exportSettings, "target_type":this.targetType});
+      },
+      exportVennSequenceFastq: function(ids) {
+        let expset = {};
+        for(let ii = 0;ii < this.dataSets.length;ii++){
+          expset[this.dataSets[ii].id] = 0;
+        }
+        for(let ii = 0;ii < ids.length;ii++){
+          expset[ids[ii]] = 1;
+        }
+        ipcRenderer.send('export-overlapped-sequences-fastq', {"settings": expset, "target_type":this.targetType});
+      },
+      exportSequencesFastq: function() {
+        ipcRenderer.send('export-overlapped-sequences-fastq', {"settings": this.exportSettings, "target_type":this.targetType});
+      },
+      changeClusterNumberFilter:function(){
+        let rcount = 0;
+        for(let ii = 0;ii < this.selectedVennData.length;ii++){
+          let ddiv = document.getElementById('venn_combination_'+ii);
+          if(this.clusterNumberFilter.length > 0){
+            if(this.clusterNumberFilter == this.selectedVennData[ii].sets.length+""){
+              ddiv.style['display'] = 'flex';
+              ddiv.style['flex-wrap'] = 'wrap';
+              rcount += 1;
+            }else{
+              ddiv.style['display'] = 'none';
+              continue;
+            }
+          }else{
+              ddiv.style['display'] = 'flex';
+              ddiv.style['flex-wrap'] = 'wrap';
+              rcount += 1;
+          }
+          if(rcount%2 == 0){
+            ddiv.style["background-color"] = "rgb(223,223,255)";
+          }else{
+            ddiv.style["background-color"] = "rgb(255,255,255)";
+          }
+        }
       }
     },
   }

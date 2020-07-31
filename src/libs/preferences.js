@@ -6,6 +6,7 @@ const ElectronPreferences = require('electron-preferences');
 let defaultPreferences = {
     "view": {
         "items": [
+            "copy_button",
             "id",
             "ngs_id",
             "head",
@@ -16,6 +17,10 @@ let defaultPreferences = {
             "total_length",
             "count",
             "ratio",
+            "a_ratio",
+            "c_ratio",
+            "g_ratio",
+            "t_ratio",
         ],
         "list_size": 100,
     },
@@ -86,6 +91,7 @@ let preferences_hs = {
                                 'key': 'items',
                                 'type': 'checkbox',
                                 'options': [
+                                    {'label': 'Copy Sequence Button', 'value': 'copy_button'},
                                     {'label': 'ID', 'value': 'id'},
                                     {'label': 'NGS ID', 'value': 'ngs_id'},
                                     {'label': 'Head', 'value': 'head'},
@@ -260,6 +266,12 @@ class AppPreferences {
     show() {
         this.preferences.show();
     }
+
+    //テストでの使用以外は想定していない。
+    changePreferencesDebug(new_preferences){
+        this.preferences.preferences = new_preferences;
+    }
+
     get() {
         return this.preferences.preferences;
     }

@@ -1,6 +1,3 @@
-/**
- * Created by doi on 2019/01/04.
- */
 const sqlite3 = require('sqlite3').verbose();
 const exec = require('child_process').exec
 var path = require('path');
@@ -9,9 +6,10 @@ var readline = require('readline');
 var async = require('async');
 var temp = require('temp');
 const zlib     = require('zlib');
+const { Exception } = require('handlebars');
 
 const MERGER_CMD = '/tools/flash2';
-const MERGER_ARGS = ' -z --allow-outies --max-overlap 1000 ';
+const MERGER_ARGS = ' -z --max-overlap 1000 ';
 //const FILTER_CMD = '/tools/filter';
 const FILTER_CMD = '/tools/filter_gz';
 const CLUSTER_CMD = '/tools/cd-hit-est';
@@ -22,8 +20,7 @@ temp.track();
 
 var logger = null;
 
-function recordLog(message)
-{
+function recordLog(message) {
     if (logger) {
         logger.info(message);
     }
@@ -129,6 +126,7 @@ class Analysis {
     setPreferences(pref){
         this.appPreferences = pref;
     }
+
     create(path, callback) {
         if (fs.existsSync(path)) {
             fs.unlinkSync(path);
@@ -441,7 +439,6 @@ class Analysis {
     }
 
     mergeReads(config,input1,input2,tmpdir,outfileprefix, callback) {
-
         let command = "";
         if(config.single_or_paired == "paired"){
             command = '"'+this.base + MERGER_CMD +'" '+MERGER_ARGS+' '+ ' -d "'+tmpdir+ '" -o "'+outfileprefix+'" "'+input1+'" "'+input2+'"';
@@ -643,8 +640,7 @@ class Analysis {
         }
     }
 
-    calcBaseRatioList(sequence)
-    {
+    calcBaseRatioList(sequence) {
         return {
             A: this.calcBaseRatio(sequence, 'A'),
             C: this.calcBaseRatio(sequence, 'C'),
@@ -667,7 +663,6 @@ class Analysis {
         let sequenceStatement = this.db.prepare("INSERT INTO sequences(name, dataset_id, cluster_id, sequence, count,a_ratio, c_ratio, g_ratio, t_ratio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         this.insertSequencesForTheClusterImpl(datasetId, clusterId, sequences, 0, sequenceStatement, callback);
     }
-
 
     insertSequencesAndClustersImpl(datasetId, sequenceList, clusterList, clusterNames, minClusterSize, index, accepted, rejected, callback) {
         const self = this;
@@ -827,7 +822,6 @@ class Analysis {
             }
             callback();
         });
-
     }
 
     nelderMeadForTimeEstimation(value_list,answers){
@@ -981,6 +975,7 @@ class Analysis {
         }
         return ret;
     }
+
     analyzeImpl(config, datasetList, index, callback) {
         const self = this;
         if (index >= datasetList.length) {
@@ -1564,22 +1559,32 @@ class Analysis {
         });
     }
 
-    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, callback) {
+    getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, scoringFunction, callback) {
         const self = this;
-        if(false){//ToDo チェックボックスで指定させる
-            //上昇傾向でソートする
+        if(scoringFunction){
             let sorter_func = function(dataSets, sequences, compareTarget){
                 self.prepareCompareData(dataSets, sequences, compareTarget, function(data_tmp) {
                     let data_sorter = [];
+                    /*
+                    let scoringFunction = function(ratiolist){
+                        let lmin = ratiolist[ratiolist.length-1];
+                        for(let ii = 0;ii < ratiolist.length-1;ii++){
+                            lmin = Math.min(ratiolist[ii+1]-ratiolist[ii],lmin);
+                        }
+                        return lmin;
+                    };
+                    */
+
                     for(let tt = 0;tt < data_tmp.length;tt++){
                         if(dataSets.length > 1){
-                            let diffsum = 0;
-                            let ratio_0 = data_tmp[tt].counts[dataSets[0].id] / dataSets[0].accepted_cluster_sequences * 100;
-                            for(let dd = 1;dd < dataSets.length-1;dd++){
-                                let ratio_1 = data_tmp[tt].counts[dataSets[dd+1].id] / dataSets[dd+1].accepted_cluster_sequences * 100;
-                                diffsum += (ratio_1-ratio_0)*dd;
+                            let data_ratio = [];
+                            for(let dd = 0;dd < dataSets.length;dd++){
+                                let ratio = data_tmp[tt].counts[dataSets[dd].id] / dataSets[dd].accepted_cluster_sequences * 100;
+                                data_ratio.push(ratio);
                             }
-                            data_sorter.push([diffsum,data_tmp[tt]]);
+                            //console.log(data_tmp[tt].sequence);
+                            //console.log(scoringFunction(data_ratio));
+                            data_sorter.push([scoringFunction(data_ratio),data_tmp[tt]]);
                         }else{
                             data_sorter.push([0,data_tmp[0]]);
                         }
@@ -1596,7 +1601,8 @@ class Analysis {
                         }
                     );
                     data_sorter.reverse();
-                    callback(dataSets, data_sorter.map((item) => { return item[1]; }));
+                    let start = (page - 1) * numberOfCompare;
+                    callback(dataSets, data_sorter.slice(start,start+numberOfCompare).map((item) => { return item[1]; }));
                 });
             };
             
@@ -1606,11 +1612,11 @@ class Analysis {
                     self.getSequences(dataSetId, null, filterSettings["conditions"]["key"], null, 0, filterSettings["threshold"], function(result) {
                         let sequence_list = result.sequences;
                         let sequences = sequence_list.map((item) => { return item.sequence[1]; });
-                        //全エントリ取って最初のラウンドの ratio と最終ラウンドの ratio の差でソートする
                         sorter_func(dataSets, sequences, compareTarget);
                     });
                 });
             }else{
+                //Compare One からの呼び出しは想定していない
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
@@ -1632,12 +1638,34 @@ class Analysis {
                         })
                     });
                 });
-            }else{
+            }else if(compareTarget == "cluster_representative"){
+
                 self.getDataSets(function(dataSets) {
                     self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
                         let clusters = result.clusters;
                         let start = (page - 1) * numberOfCompare;
                         let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
+                            callback(dataSets, data);
+                        })
+                    });
+                });
+            }else if(compareTarget == "cluster_all"){
+                self.getDataSets(function(dataSets) {
+                    self.getClusters(dataSetId, filterSettings["conditions"], null, null, filterSettings["threshold"], function(result) {
+                        let clusters = result.clusters;
+                        let start = (page - 1) * numberOfCompare;
+                        let sequences = clusters.map((item) => { return item.sequence[1]; }).slice(start, start + numberOfCompare);
+                        
+                        
+                        if(filterSettings["compare_one"]){
+                            if(filterSettings["conditions"]["key"]){
+                                sequences = [filterSettings["conditions"]["key"]];
+                            }else{
+                                console.log("??????????????? error in code?");
+                            }
+                        }
+
                         self.prepareCompareData(dataSets, sequences, compareTarget, function(data) {
                             callback(dataSets, data);
                         })
@@ -1665,10 +1693,9 @@ class Analysis {
             }
             callback(row);
         });
-    }
-    
+    }    
 
-    exportDataSetAsFastaFile(dataSets, index, files, callback) {
+    exportDataSetAsFastaFile(dataSets, index, files, target_type, callback) {
         const self = this;
         if (index >= dataSets.length) {
             callback(files);
@@ -1680,29 +1707,48 @@ class Analysis {
             if (error) {
                 throw error;
             }
-            self.getClusters(dataSetId, null, null, null, 0, function(result) {
-                result.clusters.forEach(function(cluster) {
-                    fs.writeSync(info.fd, ">" + cluster.name + "\n");
-                    fs.writeSync(info.fd, cluster.sequence[1] + "\n");
+            if(target_type == "cluster"){
+                self.getClusters(dataSetId, null, null, null, 0, function(result) {
+                    result.clusters.forEach(function(cluster) {
+                        fs.writeSync(info.fd, ">" + cluster.name + "\n");
+                        fs.writeSync(info.fd, cluster.sequence[1] + "\n");
+                    });
+                    fs.close(info.fd, function(error) {
+                        files[dataSetId] = info.path;
+                        self.exportDataSetAsFastaFile(dataSets, index + 1, files, target_type, callback);
+                    });
                 });
-                fs.close(info.fd, function(error) {
-                    files[dataSetId] = info.path;
-                    self.exportDataSetAsFastaFile(dataSets, index + 1, files, callback);
+            }else if(target_type == "sequence"){
+                self.getSequences(dataSetId,null , "", null, null, {
+                    ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0
+                }
+                , function(result) {
+                    result.sequences.forEach(function(sequence) {
+                        fs.writeSync(info.fd, ">" + sequence.name + "\n");
+                        fs.writeSync(info.fd, sequence.sequence[1] + "\n");
+                    });
+                    fs.close(info.fd, function(error) {
+                        files[dataSetId] = info.path;
+                        self.exportDataSetAsFastaFile(dataSets, index + 1, files, target_type, callback);
+                    });
                 });
-            });
+            }else{
+                throw type+" is not defined.";
+            }
+            
         });
     }
 
-    exportDataSetAsFasta(dataSets, callback) {
-        this.exportDataSetAsFastaFile(dataSets, 0, {},function(files) {
+    exportDataSetAsFasta(dataSets, type, callback) {
+        this.exportDataSetAsFastaFile(dataSets, 0, {}, type,function(files) {
             callback(files);
         });
     }
 
-    getVennData(callback) {
+    getVennData(type, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, type, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
                 let command = '"'+self.base + VENN_CMD + '" --command summary --include "' + files.join('" --include "') + '"';
                 recordLog(command);
@@ -1710,9 +1756,10 @@ class Analysis {
                     let vennData = eval(stdout);
                     let result = [];
                     vennData.forEach((item) => {
-                        let entry = {sets: [], size: item.size};
+                        let entry = {sets: [],ids:[], size: item.size};
                         item.sets.forEach((index) => {
                             entry.sets.push(dataSets[index].name);
+                            entry.ids.push(dataSets[index].id);
                         })
                         result.push(entry);
                     });
@@ -1890,11 +1937,13 @@ class Analysis {
         self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
             let ext = path.extname(filename);
             if (ext == '.csv') {
-                console.log(result["sequence_count"]);
                 self.exportAsCsv(filename, result, "cluster",callback);
             } else if (ext == '.fasta') {
                 let clusters = result.clusters;
                 self.exportAsFasta(filename, clusters, callback);
+            } else{
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }
@@ -1905,25 +1954,28 @@ class Analysis {
             let ext = path.extname(filename);
             if (ext == '.csv') {
                 if(clusterId !== null){
-                    self.exportAsCsv(filename, result,"family_sequence", callback);
+                    self.exportAsCsv(filename, result, "family_sequence", callback);
                 }else{
-                    self.exportAsCsv(filename, result,"sequence", callback);
+                    self.exportAsCsv(filename, result, "sequence", callback);
                 }
             } else if (ext == '.fasta') {
                 self.exportAsFasta(filename, result.sequences, callback);
+            } else {
+                callback();
+                throw new Exception(ext+" is not supported format.");
             }
         });
     }
 
-    exportCommonSequences(dataSetNames, filename, callback) {
+    exportCommonSequences(dataSetNames, target_type, filename, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
             dataSets = dataSets.filter((dataSet) => {
                return dataSetNames.includes(dataSet.name);
             });
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
                 let files = Object.keys(fileList).map(function(id) { return fileList[id]; });
-                let format = path.extname(filename).substr(1);
+                let format = path.extname(filename).substr(1);//拡張子の取得
                 let command = '"'+self.base + VENN_CMD + '" --command ' + format + ' --include "' + files.join('" --include "') + '"';
                 recordLog(command);
                 exec(command, function(error, stdout, stderr) {
@@ -1938,11 +1990,11 @@ class Analysis {
         });
     }
 
-    exportOverlappedSequences(exportSettings, filename, callback) {
+    exportOverlappedSequences(exportSettings, target_type, filename, callback) {
         const self = this;
         self.getDataSets(function(dataSets) {
-            self.exportDataSetAsFasta(dataSets, function(fileList) {
-                //exportSettings はラウンドを key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
+                //exportSettings は最初に与えられたファイル順（1 開始）を key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
                 let config = Object.keys(exportSettings).reduce(function(list, id) {
                     if (exportSettings[id] == 1) {
                         list['includes'].push(fileList[id]);
@@ -1954,7 +2006,9 @@ class Analysis {
                 let format = path.extname(filename).substr(1);
                 let command = '"'+self.base + VENN_CMD + '" --command ' + format;
                 command += ' --include "' + config['includes'].join('" --include "') + '"';
-                command += ' --exclude "' + config['excludes'].join('" --exclude "') + '"';
+                if(config['excludes'].length > 0){
+                    command += ' --exclude "' + config['excludes'].join('" --exclude "') + '"';
+                }
                 recordLog(command);
                 exec(command, function(error, stdout, stderr) {
                     if (error) {
@@ -1967,9 +2021,170 @@ class Analysis {
             });
         });
     }
+    getOutputFastqName(dirname,dataset){
+        return dirname+'/'+dataset.name.replace(/[^.A-Za-z0-9\-]/,"_")+"."+dataset.cycle_no+".fastq.gz";
+    };
+    exportOverlappedSequencesFastq(exportSettings, target_type, filename, callback) {
+        const self = this;
+        self.getDataSets(function(dataSets) {
+            self.exportDataSetAsFasta(dataSets, target_type, function(fileList) {
+                //exportSettings は最初に与えられたファイル順（1 開始）を key、含めるか排除するかを示す整数を value に持つオブジェクトだと思う
+                let config = Object.keys(exportSettings).reduce(function(list, id) {
+                    if (exportSettings[id] == 1) {
+                        list['includes'].push(fileList[id]);
+                    } else if (exportSettings[id] == -1) {
+                        list['excludes'].push(fileList[id]);
+                    }
+                    return list;
+                }, {'includes': [], 'excludes': []});
+                let format = path.extname(filename).substr(1);
+                let command = '"'+self.base + VENN_CMD + '" --command csv ';
+                command += ' --include "' + config['includes'].join('" --include "') + '"';
+                if(config['excludes'].length > 0){
+                    command += ' --exclude "' + config['excludes'].join('" --exclude "') + '"';
+                }
+                recordLog(command);
+                /*
+                {プロセスが kill される場合 https://lealog.hateblo.jp/entry/2013/04/04/010943
+                encoding: 'utf8',
+                timeout: 0,
+                maxBuffer: 200*1024,
+                killSignal: 'SIGTERM',
+                cwd: null,// = CurrentWorkingDirectory
+                env: null// = EnvironmentVariables
+                }
+                */
+                exec(command, function(error, stdout, stderr) {
+                    if (error) {
+                        recordLog(error);
+                    }
+                    recordLog(stderr);
+                    let slis = stdout.split(/[\r\n]+/);
+                    self.getDataSets(function(dataSets) {
+                        for(let dd = 0;dd < dataSets.length;dd++){
+                            let dataSetId = dataSets[dd].id;
+                            //let sequence_and_count = [];
+                            let func_list = [
+                                function(sequence_and_count){
+                                    let gz = zlib.createGzip();
+                                    const writer = fs.createWriteStream(self.getOutputFastqName(filename,dataSets[dd]));
+                                    
+                                    gz.pipe(writer);
+                                    gz.on('error', function(err){
+                                        if(err){
+                                            recordLog("gzip error", err);
+                                        }
+                                    });
+                                    
+                                    /*gz.on('finish', function(){
+                                        recordLog("finished.");
+                                    });
+                                    */
+                                    for(let ii = 0;ii < sequence_and_count.length;ii++){
+                                        let s = sequence_and_count[ii][0];
+                                        let p = s.replace(/./gi, 'P');
 
-    exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget, filterSettings,callback) {
-        this.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, function(dataSets, dataList) {
+                                        let c = sequence_and_count[ii][1];
+                                        for(let ci = 0;ci < c;ci++){
+                                            gz.write("@seq:"+ii+":"+ci+"\n");
+                                            gz.write(s+"\n");
+                                            gz.write("+\n");
+                                            gz.write(p+"\n");
+                                        }
+                                    }
+                                    gz.end();
+                                }
+                            ];
+                            
+                            for(let ii = 0;ii < slis.length;ii++){
+                                let skey = slis[slis.length-1-ii];
+                                if(skey.length < 1){
+                                    continue;
+                                }
+                                let conditions = {key: skey,primary_only: true,};
+                                let threshold={ratio: 0, A: 100,C: 100,G: 100,T: 100,lb_A: 0,lb_C: 0,lb_G: 0,lb_T: 0};
+                                //dataSet に含まれるクラスターを全部取ってフィルタする
+                                let current_func = function(sequence_and_count){
+                                    if(target_type == "cluster"){
+                                        self.getClusters(dataSetId, conditions, 1000000000,1, threshold,
+                                            function(resultc) {
+                                                let flist2 = [];
+                                                for(let cc = 0;cc < resultc.clusters.length;cc++){
+                                                    //部分一致なので完全一致をとる
+                                                    if(resultc.clusters[cc].sequence[1] != skey){
+                                                        continue;
+                                                    }
+                                                    flist2.push(
+                                                        function(){
+                                                            self.getSequences(dataSetId,resultc.clusters[cc].id , "", null, null, threshold, function (result) {
+                                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                                    sequence_and_count.push(
+                                                                        [
+                                                                            result.sequences[ss].sequence[0]
+                                                                            +result.sequences[ss].sequence[1]
+                                                                            +result.sequences[ss].sequence[2]
+                                                                            ,result.sequences[ss].count
+                                                                        ]
+                                                                    );
+                                                                }
+                                                                
+                                                                if(flist2.length == 0){
+                                                                    let prev_func = func_list.pop();
+                                                                    prev_func(sequence_and_count);
+                                                                }else{
+                                                                    let prev_func = flist2.pop();
+                                                                    prev_func();
+                                                                }
+                                                            });
+                                                        }
+                                                    );
+                                                }
+                                                if(flist2.length == 0){
+                                                    let prev_func = func_list.pop();
+                                                    prev_func(sequence_and_count);
+                                                }else{
+                                                    let prev_func = flist2.pop();
+                                                    prev_func();
+                                                }
+                                            }
+                                        );
+                                    }else if(target_type == "sequence"){
+                                        self.getSequences(dataSetId, null, skey, 1000000000,1, threshold,
+                                            function(result) {
+                                                for(let ss = 0;ss < result.sequences.length;ss++){
+                                                    if(result.sequences[ss].sequence[1] != skey){
+                                                        continue;
+                                                    }
+                                                    sequence_and_count.push(
+                                                        [
+                                                            result.sequences[ss].sequence[0]
+                                                            +result.sequences[ss].sequence[1]
+                                                            +result.sequences[ss].sequence[2]
+                                                            ,result.sequences[ss].count
+                                                        ]
+                                                    );
+                                                }
+                                                let prev_func = func_list.pop();
+                                                prev_func(sequence_and_count);
+                                            });
+                                    }else{
+                                        recordLog("??error in code??????");
+                                    }
+                                };
+                                func_list.push(current_func);
+                            }
+                            let prev_func = func_list.pop();
+                            prev_func([]);
+                        }
+                    });
+                    callback();
+                });
+            });
+        });
+    }
+
+    exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget, filterSettings, scoring_function, callback) {
+        this.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, scoring_function, function(dataSets, dataList) {
             fs.open(filename, 'w', function(error, fd) {
                 if (error) {
                     throw error;
