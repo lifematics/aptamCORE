@@ -628,13 +628,17 @@ function showNewAnalysisDialog(){
     }
     dialog.showSaveDialog(window, {
         properties: ['promptToCreate'],
-        title: 'Select a analysis file',
+        title: 'Select an analysis file',
         defaultPath: defpath,
         filters: [
             {name: 'Analysis File', extensions: ['db']}
         ]
     }).then(function(result) {
         let filename = result.filePath;
+        let ext = path.extname(filename);
+        if(ext.length == 0 || ext.length > 15){
+            filename += ".db";
+        }
         if (filename) {
             if(analysis.getPath() == filename){
                 dialog.showErrorBox("Error", "Can not use the same file name with the current db.");
@@ -690,10 +694,11 @@ function showOpenAnalysisDialog(){
     }
     dialog.showOpenDialog(null, {
         properties: ['openFile'],
-        title: 'Select a analysis file',
+        title: 'Select an analysis file',
         defaultPath: defpath,
         filters: [
-            {name: 'Analysis File', extensions: ['db']}
+            {name: 'Analysis File', extensions: ['db']},
+            {name: "All Files",extensions: ["*"]}
         ]
     }).then(function(result) {
         let filenames = result.filePaths;
