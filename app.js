@@ -635,11 +635,12 @@ function showNewAnalysisDialog(){
         ]
     }).then(function(result) {
         let filename = result.filePath;
-        let ext = path.extname(filename);
-        if(ext.length == 0 || ext.length > 15){
-            filename += ".db";
-        }
         if (filename) {
+            
+            let ext = path.extname(filename);
+            if(ext.length == 0 || ext.length > 15){
+                filename += ".db";
+            }
             if(analysis.getPath() == filename){
                 dialog.showErrorBox("Error", "Can not use the same file name with the current db.");
             }else{

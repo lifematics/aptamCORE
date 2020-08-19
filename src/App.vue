@@ -318,7 +318,7 @@
         methods: {
             configChanged: function(config) {
                 this.config = config;
-                console.log(this.config);
+                //console.log(this.config);
             },
             changeClusterSubFrame: function(framename){
                 this.clusterSubFrame = framename;
