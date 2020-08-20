@@ -636,7 +636,6 @@ function showNewAnalysisDialog(){
     }).then(function(result) {
         let filename = result.filePath;
         if (filename) {
-            
             let ext = path.extname(filename);
             if(ext.length == 0 || ext.length > 15){
                 filename += ".db";
