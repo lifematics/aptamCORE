@@ -154,8 +154,6 @@ app.on('ready', () => {
 
     window.setTitle(windowTitle);
 
-    // Open the DevTools.
-    //window.webContents.openDevTools();
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -781,13 +779,26 @@ function createMenu() {
       template.unshift({
           label: app.name,
           submenu: [
-              {
-                  label: 'Settings',
-                  accelerator: "CmdOrCtrl+,",
-                  click(item, focusedWindow) {
-                      showSettingsDialog();
-                  }
-              },
+            {
+                label: 'Settings',
+                accelerator: "CmdOrCtrl+,",
+                click(item, focusedWindow) {
+                    showSettingsDialog();
+                }
+            },
+            {type: 'separator'},
+            {
+                label: 'DevTools',
+                accelerator: "CmdOrCtrl+Shift+K",
+                click(item, focusedWindow) {
+                    if(window.webContents.isDevToolsOpened()){
+                        window.webContents.closeDevTools();
+                    }else{
+                        // Open the DevTools.
+                        window.webContents.openDevTools();
+                    }
+                }
+            },
               {type: 'separator'},
               {role: 'quit'}
           ]
