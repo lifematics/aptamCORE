@@ -11,7 +11,6 @@ npm install
 # chmod 755 tools/venn  tools/flash2  tools/cd-hit-est tools/filter_gz
 ```
 
-
 ### Create linux binaries of tools
 Please follow the instructions for flash2 and cd-hit-est
 [FLASH2](https://github.com/dstreett/FLASH2)  
@@ -24,7 +23,6 @@ make
 cp venn ../
 cp filter_gz ../
 ```
-
 
 ### Compiles and hot-reloads for development
 Set up a server
