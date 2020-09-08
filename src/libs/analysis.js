@@ -7,6 +7,7 @@ var async = require('async');
 var temp = require('temp');
 const zlib     = require('zlib');
 const { Exception } = require('handlebars');
+const { assert } = require('console');
 
 const MERGER_CMD = '/tools/flash2';
 const MERGER_ARGS = ' -z --max-overlap 1000 ';
@@ -668,6 +669,96 @@ class Analysis {
         this.insertSequencesForTheClusterImpl(datasetId, clusterId, sequences, 0, sequenceStatement, callback);
     }
 
+    //letter_tablename_pair = [[letter,tablename],...]
+    createRatioRecords(letter_tablename_pair,source_table_name,callback){
+        assert(source_table_name == "clusters" || source_table_name == "sequences");
+        let self = this;
+        self.db.serialize(function () {
+            let vss = [];
+            self.db.each('select id,dataset_id,sequence from '+source_table_name, 
+                [], 
+                function (err, res) {
+                    if (err){ throw err;}
+                    //HEADPRIMER-VARIABLE-TAILPRIMER という形である必要がある。
+                    //HEAD/TAILPRIMER が無い場合は -VARIABLE- という文字列にしておくこと。
+                    let letters = res["sequence"].split('-')[1].split('');
+                    if(letters.length == 0){
+                        return;
+                    }
+                    let hscount = {};
+                    for(let ii = 0;ii < letter_tablename_pair.length;ii++){
+                        hscount[letter_tablename_pair[ii][0]] = 0;
+                    }
+                    let lcount = 0;
+                    for(let ii = 0;ii < letters.length;ii++){
+                        if(letters[ii] == "-"){
+                            continue;
+                        }
+                        lcount += 1;
+                        if(letters[ii] in hscount){
+                          hscount[letters[ii]] +=1 ; 
+                        }
+                    }
+                    if(lcount > 0){
+                        for(let ii = 0;ii < letter_tablename_pair.length;ii++){
+                            hscount[letter_tablename_pair[ii][0]] /= lcount;
+                        }
+                    }
+                    vss.push([res["id"],res["dataset_id"],hscount]);
+                }
+            ,function(){
+                let callbacks1 = [
+                    function(error){
+                        let callbacks0 = [function(){
+                            self.db.exec('COMMIT',callback());
+                        }];
+                        while(vss.length > 0){
+                            let vv = vss.pop();
+                            for(let kk = 0;kk < letter_tablename_pair.length;kk++){
+                                let tablename = letter_tablename_pair[kk][1];
+                                let val = vv[2][letter_tablename_pair[kk][0]];
+                                callbacks0.push(function() {
+                                    self.db.run("INSERT INTO "+tablename+" (source_id, dataset_id, value) VALUES (?, ?, ?)",
+                                    [vv[0],vv[1],val]
+                                    , function (error) {
+                                        if(error){
+                                            recordLog(error);
+                                        }
+                                        if(callbacks0.length > 0){
+                                            let pfunc = callbacks0.pop();
+                                            pfunc.call();
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                        self.db.exec('BEGIN TRANSACTION',function(){callbacks0.pop().call();});
+                    }
+                    ,
+
+                ];
+                for(let kk = 0;kk < letter_tablename_pair.length;kk++){
+                    if(letter_tablename_pair[kk][0] == "-" || letter_tablename_pair[kk][0] == "%"){
+                        throw letter_tablename_pair[kk][0]+" is not allowed for calculating ratio.";
+                    }
+                    callbacks1.push(function() {self.db.run("CREATE TABLE "+letter_tablename_pair[kk][1]+"(source_id INTEGER,dataset_id INTEGER,value REAL , FOREIGN KEY(source_id) REFERENCES "+source_table_name+"(id))"
+                    ,[], function (error) {
+                        if(error){
+                            recordLog(error);
+                        }
+                        if(callbacks1.length > 0){
+                            let pfunc = callbacks1.pop();
+                            pfunc.call();
+                        }
+                    });
+                    });
+                }
+                self.db.exec('COMMIT',function(){callbacks1.pop().call();});
+            });
+        });
+    }
+
+
     insertSequencesAndClustersImpl(datasetId, sequenceList, clusterList, clusterNames, minClusterSize, index, accepted, rejected, callback) {
         const self = this;
         let rejected_this={//コールバックで呼ばれる関数の引数に手を加えるのが気持ち悪かったのでコピーした
@@ -1063,7 +1154,7 @@ class Analysis {
             function(){
                 self.getDataSets(function(rows) {
                     self.analyzeImpl(config, rows, 0, function() {
-                        callback();
+                        self.createRatioRecords([["A","A_ratio"],["C","C_ratio"],["G","G_ratio"],["T","T_ratio"]],"sequences",function(){self.createRatioRecords([["A","A_ratio_cluster"],["C","C_ratio_cluster"],["G","G_ratio_cluster"],["T","T_ratio_cluster"]],"clusters",callback)});
                     });
                 });
             }
