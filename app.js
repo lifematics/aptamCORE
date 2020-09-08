@@ -154,8 +154,6 @@ app.on('ready', () => {
 
     window.setTitle(windowTitle);
 
-    // Open the DevTools.
-    //window.webContents.openDevTools();
 
     // Emitted when the window is closed.
     window.on('closed', () => {
@@ -709,11 +707,11 @@ function showNewAnalysisDialog(){
         ]
     }).then(function(result) {
         let filename = result.filePath;
-        let ext = path.extname(filename);
-        if(ext.length == 0 || ext.length > 15){
-            filename += ".db";
-        }
         if (filename) {
+            let ext = path.extname(filename);
+            if(ext.length == 0 || ext.length > 15){
+                filename += ".db";
+            }
             if(analysis.getPath() == filename){
                 dialog.showErrorBox("Error", "Can not use the same file name with the current db.");
             }else{
@@ -855,13 +853,26 @@ function createMenu() {
       template.unshift({
           label: app.name,
           submenu: [
-              {
-                  label: 'Settings',
-                  accelerator: "CmdOrCtrl+,",
-                  click(item, focusedWindow) {
-                      showSettingsDialog();
-                  }
-              },
+            {
+                label: 'Settings',
+                accelerator: "CmdOrCtrl+,",
+                click(item, focusedWindow) {
+                    showSettingsDialog();
+                }
+            },
+            {type: 'separator'},
+            {
+                label: 'DevTools',
+                accelerator: "CmdOrCtrl+Shift+K",
+                click(item, focusedWindow) {
+                    if(window.webContents.isDevToolsOpened()){
+                        window.webContents.closeDevTools();
+                    }else{
+                        // Open the DevTools.
+                        window.webContents.openDevTools();
+                    }
+                }
+            },
               {type: 'separator'},
               {role: 'quit'}
           ]

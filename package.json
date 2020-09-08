@@ -1,7 +1,7 @@
 {
   "name": "aptamCORE",
   "productName": "aptamCORE",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "main": "app.js",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "build": "cross-env NODE_ENV=production ./node_modules/.bin/vue-cli-service build",
     "lint": "vue-cli-service lint",
     "debug": "cross-env NODE_ENV=debug ELECTRON_ENABLE_LOGGING=true ./node_modules/.bin/electron .",
-    "package:win": "electron-packager . aptamCORE --platform=win32 --arch=x64 --overwrite --ignore \"^/tools\" --ignore \"^/wiki\" --asar && mkdir aptamCORE-win32-x64/tools && copy tools\\* aptamCORE-win32-x64/tools && copy LICENSE aptamCORE-win32-x64/LICENSE.aptamCORE",
+    "package:win": "electron-packager . aptamCORE --platform=win32 --arch=x64 --overwrite --ignore \"^/tools\" --ignore \"^/wiki\" --asar && mkdir aptamCORE-win32-x64\\tools && copy tools\\* aptamCORE-win32-x64\\tools && copy LICENSE aptamCORE-win32-x64\\LICENSE.aptamCORE",
     "package:linux": "electron-packager . aptamCORE --platform=linux --arch=x64 --overwrite --ignore \"^/tools\" --ignore \"^/wiki\" --asar && mkdir aptamCORE-linux-x64/tools && cp -r tools/* aptamCORE-linux-x64/tools && cp LICENSE aptamCORE-linux-x64/LICENSE.aptamCORE",
     "clean": "rm -rf dist *-win32-x64 *-linux-x64 ",
     "postinstall": "electron-builder install-app-deps"
@@ -57,7 +57,7 @@
     "bootstrap-vue": "^2.7.0",
     "css-loader": "^3.4.2",
     "decompress-zip": "^0.2.2",
-    "electron": "^8.1.0",
+    "electron": "8.1.0",
     "electron-build": "0.0.3",
     "electron-rebuild": "^1.11.0",
     "eslint": "^6.8.0",
