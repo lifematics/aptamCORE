@@ -784,7 +784,7 @@ class Analysis {
                                 let tablename = letter_tablename_pair[kk][1];
                                 let val = vv[2][letter_tablename_pair[kk][0]];
                                 callbacks0.push(function() {
-                                    self.db.run("INSERT INTO "+tablename+" (source_id, dataset_id, value) VALUES (?, ?, ?)",
+                                    self.db.run("INSERT INTO "+tablename+" (source_id, source_dataset_id, value) VALUES (?, ?, ?)",
                                     [vv[0],vv[1],val]
                                     , function (error) {
                                         if(error){
@@ -1230,28 +1230,28 @@ class Analysis {
                         throw error;
                     }
                 });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio (source_id INTEGER,dataset_id INTEGER,value)", (error) => {
+                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
                     if (error) {
                         self.notifier.send(error);
                         throw error;
                     } else {
                     }
                 });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio on "+letters_track[ii]+"_ratio(source_id,dataset_id)", (error) => {
+                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio on "+letters_track[ii]+"_ratio(source_id,source_dataset_id)", (error) => {
                     if (error) {
                         self.notifier.send(error);
                         throw error;
                     } else {
                     }
                 });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio_cluster (source_id INTEGER,dataset_id INTEGER,value)", (error) => {
+                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio_cluster (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
                     if (error) {
                         self.notifier.send(error);
                         throw error;
                     } else {
                     }
                 });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio_cluster on "+letters_track[ii]+"_ratio_cluster(source_id,dataset_id)", (error) => {
+                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio_cluster on "+letters_track[ii]+"_ratio_cluster(source_id,source_dataset_id)", (error) => {
                     if (error) {
                         self.notifier.send(error);
                         throw error;
@@ -1329,7 +1329,7 @@ class Analysis {
             + "     clusters "
             + "     INNER JOIN sequences ON sequences.cluster_id = clusters.id "
         let qline = new SQLQueryLine(baseQuery,[]);
-        qline.addToWhere(" clusters.dataset_id = ? ",dataSetId);
+        qline.addToWhere(" clusters.dataset_id = ? ",[dataSetId]);
 
         let [ query, params ] = this.setSearchConditions('sequences', qline, conditions, threshold);
         this.db.get(query, params, function (error, row) {
@@ -1363,9 +1363,17 @@ class Analysis {
             for(let ii = 0;ii < letters_chk.length;ii++){
                 let chkk = letters_chk[ii];
                 let tablename = (target == "clusters")?(chkk+"_ratio_cluster"):(chkk+"_ratio");
-                if(chkk in threshold || "lb_"+chkk in threshold){
-                    qline.addToJoin("INNER JOIN "+tablename+" ON "+target+".id = "+tablename+".source_id ");
+                
+                let add_join = false;
+                if(chkk in threshold && threshold[chkk] < 100.0){
+                    add_join = true;
+                }else if("lb_"+chkk in threshold && threshold["lb_"+chkk] > 0.0){
+                    add_join = true;
                 }
+                if(!add_join){
+                    continue;
+                }
+                qline.addToJoin("INNER JOIN "+tablename+" ON "+target+".id = "+tablename+".source_id ");
                 if(chkk in threshold && threshold[chkk] < 100.0){
                     qline.addToWhere(' AND ' + tablename + '.value <= ? ',threshold[chkk] / 100.0);
                 }
@@ -1474,8 +1482,8 @@ class Analysis {
             + "     clusters ";
         let qline = new SQLQueryLine(baseQuery,[]);
         qline.addToJoin(" INNER JOIN sequences on clusters.dataset_id = sequences.dataset_id AND clusters.sequence = sequences.sequence ");
-
-        qline.addToWhere(" clusters.dataset_id = ? ",dataSetId);
+        qline.addToWhere(" clusters.dataset_id = ? ",[dataSetId]);
+        
         let [ query, params ] = this.setSearchConditions('clusters',qline, conditions, threshold);
         this.executeClusterQuery(query, params, number, page, numClusters, count, callback);
     }
@@ -1505,7 +1513,7 @@ class Analysis {
         
         let qline2 = new SQLQueryLine(baseQuery2,[]);
         qline2.addToJoin(" INNER JOIN sequences on clusters.dataset_id = sequences.dataset_id AND clusters.id = sequences.cluster_id ");
-        qline2.addToWhere("clusters.dataset_id = ? ",dataSetId );
+        qline2.addToWhere("clusters.dataset_id = ? ",[dataSetId]);
 
         let [ query2, params2 ] = this.setSearchConditions('sequences',qline2, conditions, threshold);
 
@@ -1561,9 +1569,9 @@ class Analysis {
             let baseQuery = ('SELECT ' + target + ' AS count FROM sequences');
             let baseParams = [];
             let qline = new SQLQueryLine(baseQuery,baseParams);
-            qline.addToWhere('dataset_id = ?',dataSetId);
+            qline.addToWhere('dataset_id = ?',[dataSetId]);
             if (clusterId) {
-                qline.addToWhere(' AND cluster_id = ? ',clusterId);
+                qline.addToWhere(' AND cluster_id = ? ',[clusterId]);
             }
             let [ query, params ] = this.setSearchConditions('sequences', qline, conditions, threshold);
             recordLog(query);
@@ -1621,11 +1629,11 @@ class Analysis {
 
                 let baseParams = [];
                 let qline = new SQLQueryLine(baseQuery,baseParams);
-                qline.addToWhere("dataset_id = ?",datasetId)
+                qline.addToWhere("dataset_id = ?",[dataSetId]);
                 if (clusterId) {
-                    qline.addToWhere(' AND cluster_id = ? ',clusterId);
+                    qline.addToWhere(' AND cluster_id = ? ',[clusterId]);
                 }
-                let { query, params } = self.setSearchConditions('sequences', qline, { key: key, primary_only: true }, threshold);
+                let [query, params] = self.setSearchConditions('sequences', qline, { key: key, primary_only: true }, threshold);
                 query += ' ORDER BY CAST(count AS INTEGER) DESC ';
                 if (number) {
                     let offset = number * (page - 1);
