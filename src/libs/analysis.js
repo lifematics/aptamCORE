@@ -737,6 +737,7 @@ class Analysis {
                     ,
 
                 ];
+                /*
                 for(let kk = 0;kk < letter_tablename_pair.length;kk++){
                     if(letter_tablename_pair[kk][0] == "-" || letter_tablename_pair[kk][0] == "%"){
                         throw letter_tablename_pair[kk][0]+" is not allowed for calculating ratio.";
@@ -753,6 +754,7 @@ class Analysis {
                     });
                     });
                 }
+                */
                 self.db.exec('COMMIT',function(){callbacks1.pop().call();});
             });
         });
@@ -1145,6 +1147,60 @@ class Analysis {
         logger = log4js.getLogger('system');
         const self = this;
 
+        let letters_track = ["A","C","G","T"];
+        self.db.serialize(() => {
+            self.db.run("CREATE TABLE ratio_tables (letter TEXT,sequence_table_name TEXT,cluster_table_name TEXT)", (error) => {
+                if (error) {
+                    self.notifier.send(error);
+                    throw error;
+                }
+            });
+
+            for(let ii = 0;ii < letters_track.length;ii++){
+                console.log("pushing "+ii);
+                self.db.run("INSERT INTO ratio_tables (letter,sequence_table_name,cluster_table_name) VALUES ('" +letters_track[ii]+"','" +letters_track[ii]+"_ratio','" +letters_track[ii]+"_ratio_cluster')", (error) => {
+                    if (error) {
+                        self.notifier.send(error);
+                        throw error;
+                    }
+                });
+                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio (source_id INTEGER,dataset_id INTEGER,value)", (error) => {
+                    if (error) {
+                        self.notifier.send(error);
+                        throw error;
+                    } else {
+                    }
+                });
+                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio on "+letters_track[ii]+"_ratio(source_id,dataset_id)", (error) => {
+                    if (error) {
+                        self.notifier.send(error);
+                        throw error;
+                    } else {
+                    }
+                });
+                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio_cluster (source_id INTEGER,dataset_id INTEGER,value)", (error) => {
+                    if (error) {
+                        self.notifier.send(error);
+                        throw error;
+                    } else {
+                    }
+                });
+                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio_cluster on "+letters_track[ii]+"_ratio_cluster(source_id,dataset_id)", (error) => {
+                    if (error) {
+                        self.notifier.send(error);
+                        throw error;
+                    } else {
+                    }
+                });
+            }
+        });
+
+        let pairs = [];
+        let pairs_cluster = [];
+        for(let ii = 0;ii < letters_track.length;ii++){
+            pairs.push([letters_track[ii],letters_track[ii]+"_ratio"]);
+            pairs_cluster.push([letters_track[ii],letters_track[ii]+"_ratio_cluster"]);
+        }
 
         self.addFastqToDB(config,files,0,
                 function(config_,files_,index,callback1,callback2){
@@ -1154,7 +1210,7 @@ class Analysis {
             function(){
                 self.getDataSets(function(rows) {
                     self.analyzeImpl(config, rows, 0, function() {
-                        self.createRatioRecords([["A","A_ratio"],["C","C_ratio"],["G","G_ratio"],["T","T_ratio"]],"sequences",function(){self.createRatioRecords([["A","A_ratio_cluster"],["C","C_ratio_cluster"],["G","G_ratio_cluster"],["T","T_ratio_cluster"]],"clusters",callback)});
+                        self.createRatioRecords(pairs,"sequences",function(){self.createRatioRecords(pairs_cluster,"clusters",callback)});
                     });
                 });
             }
