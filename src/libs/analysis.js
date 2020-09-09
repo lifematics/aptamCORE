@@ -79,12 +79,12 @@ class SQLQueryLine{
         }
         this.whereQuery += " "+q;
         
-        if(p.length > 0){
-            if(Array.isArray(p)){
+        if(Array.isArray(p)){
+            if(p.length > 0){
                 this.whereParam = this.whereParam.concat(p);
-            }else{
-                this.whereParam.push(p);
             }
+        }else if(p !== null){
+            this.whereParam.push(p);
         }
     }
 
@@ -1367,7 +1367,7 @@ class Analysis {
                 let add_join = false;
                 if(chkk in threshold && threshold[chkk] < 100.0){
                     add_join = true;
-                }else if("lb_"+chkk in threshold && threshold["lb_"+chkk] > 0.0){
+                }else if(("lb_"+chkk) in threshold && threshold["lb_"+chkk] > 0.0){
                     add_join = true;
                 }
                 if(!add_join){
@@ -1377,7 +1377,7 @@ class Analysis {
                 if(chkk in threshold && threshold[chkk] < 100.0){
                     qline.addToWhere(' AND ' + tablename + '.value <= ? ',threshold[chkk] / 100.0);
                 }
-                if("lb_"+chkk in threshold && threshold["lb_"+chkk] > 0.0){
+                if(("lb_"+chkk) in threshold && threshold["lb_"+chkk] > 0.0){
                     qline.addToWhere(' AND ' + tablename + '.value >= ? ',threshold["lb_"+chkk] / 100.0);
                 }
             }
