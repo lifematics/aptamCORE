@@ -311,6 +311,10 @@
                 this.scoringFunctionNames = args;
             });
 
+            ipcRenderer.on('send-to-console',(event, args) => {
+                console.log(args);
+            });
+
             this.getDataSetList();
             ipcRenderer.send('load-preferences', []);
             ipcRenderer.send('load-presets', []);

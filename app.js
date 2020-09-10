@@ -247,7 +247,7 @@ app.on('ready', () => {
         let page = 1;
         let compareTarget = args["target"];
         if(args["cluster_id"] && key){//clusterId が指定されている時は、Key は空であるはず。Cluster representative の配列を基準にするため
-            console.log("?????");
+            window.webContents.send('send-to-console',"?????");
         }
         //compare one からの呼び出しであることを示すフラグを filter settings に入れているがよくないかも
         //次に何か加えることがあれば変更
@@ -258,7 +258,7 @@ app.on('ready', () => {
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}
                 ,'compare_one':true};
                 analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
-                    //console.log(data);
+                    //window.webContents.send('send-to-console',data);
                     window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
                 });
             });
@@ -268,7 +268,7 @@ app.on('ready', () => {
             ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}
             ,'compare_one':true};
             analysis.getCompareData(dataSetId, numberOfCompare, page, compareTarget, filterSettings, null, function(dataSets, data) {
-                //console.log(data);
+                //window.webContents.send('send-to-console',data);
                 window.webContents.send('update-compare-one-view', { selected_sequence:selected_sequence, dataSets: dataSets, data: data, total: 100, page: 1, size: 1});
             });
         }
@@ -412,6 +412,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
+                window.webContents.send('send-to-console',"Save as "+filename+".");
                 analysis.exportCompareData(dataSetId, numberOfCompare, page, filename, compareTarget, filterSettings, scoringFunctionDic[scoring_function], function () {
                     window.webContents.send('finish-export');
                 });
@@ -439,6 +440,7 @@ app.on('ready', () => {
             function(result) {
                 let filename = result.filePath;
                 if (filename) {
+                    window.webContents.send('send-to-console',"Save as "+filename+".");
                     writeToFile(filename,args["lines"]);
                 }
             }
@@ -460,6 +462,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
+                window.webContents.send('send-to-console',"Save as "+filename+".");
                 let conditions = args[1];
                 let threshold = args[2];
                 window.webContents.send('start-export');
@@ -485,6 +488,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
+                window.webContents.send('send-to-console',"Save as "+filename+".");
                 window.webContents.send('start-export');
                 analysis.exportSequences(args[0], args[1], filename, args[2], args[3],function () {
                     window.webContents.send('finish-export');
@@ -508,6 +512,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
+                window.webContents.send('send-to-console',"Save as "+filename+".");
                 window.webContents.send('start-export');
                 analysis.exportCommonSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
@@ -520,7 +525,7 @@ app.on('ready', () => {
         if(defaultFilePath_debug){
             defpath = defaultFilePath_debug;
         }
-        console.log('export-overlapped-sequences');
+        window.webContents.send('send-to-console','export-overlapped-sequences');
         dialog.showSaveDialog(window, {
             properties: ['promptToCreate'],
             title: 'Specify an output file',
@@ -532,6 +537,7 @@ app.on('ready', () => {
         }).then(function(result) {
             let filename = result.filePath;
             if (filename) {
+                window.webContents.send('send-to-console',"Save as "+filename+".");
                 window.webContents.send('start-export');
                 analysis.exportOverlappedSequences(args["settings"], args["target_type"], filename, function() {
                     window.webContents.send('finish-export');
@@ -570,7 +576,7 @@ function showFastqSaveDialog(args,counter,target_type){
                 fs.statSync(filename);
             } catch(e) {
                 if(e.code === 'ENOENT') {
-                    console.log(filename);
+                    window.webContents.send('send-to-console',filename);
                     fs.mkdirSync(filename);
                 }
             }
@@ -634,6 +640,7 @@ function showNewAnalysisDialog(){
     }).then(function(result) {
         let filename = result.filePath;
         if (filename) {
+            window.webContents.send('send-to-console',"Save as "+filename+".");
             let ext = path.extname(filename);
             if(ext.length == 0 || ext.length > 15){
                 filename += ".db";
