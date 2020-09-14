@@ -7,7 +7,7 @@
         <div class="wrapper" v-else>
             <div class="rightPanel" >
                 <div class="content">
-                    <config-view v-if="mode == 'config'" :config="config" :hasLicense="hasLicense" :presets="presets" v-on:configChanged="configChanged"></config-view>
+                    <config-view ref="configComponent" v-if="mode == 'config'" :config="config" :hasLicense="hasLicense" :presets="presets" v-on:configChanged="configChanged"></config-view>
                     <info-view v-if="mode == 'info'" :config="config" :info="info" ></info-view>
                     <multipane layout="horizontal" v-if="mode == 'cluster'">
                         <div :style="{ maxHeight: '600px', overflow: 'scroll' }">
@@ -184,7 +184,11 @@
                     this.seqCountOfDataSet = 0;
                     this.seqCountOfCluster = 0;
                     if (!config.analyzed) {
-                        this.mode = 'config';
+                        if(this.mode == 'config'){
+                            this.$refs.configComponent.loadDefaultPreset();
+                        }else{
+                            this.mode = 'config';
+                        }
                     } else {
                         this.mode = 'cluster';
                     }
@@ -307,6 +311,10 @@
                 this.scoringFunctionNames = args;
             });
 
+            ipcRenderer.on('send-to-console',(event, args) => {
+                console.log(args);
+            });
+
             this.getDataSetList();
             ipcRenderer.send('load-preferences', []);
             ipcRenderer.send('load-presets', []);
@@ -314,6 +322,7 @@
         methods: {
             configChanged: function(config) {
                 this.config = config;
+                //console.log(this.config);
             },
             changeClusterSubFrame: function(framename){
                 this.clusterSubFrame = framename;
