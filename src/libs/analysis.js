@@ -1224,40 +1224,7 @@ class Analysis {
 
             for(let ii = 0;ii < letters_track.length;ii++){
                 console.log("pushing "+ii);
-                self.db.run("INSERT INTO ratio_tables (letter,sequence_table_name,cluster_table_name) VALUES ('" +letters_track[ii]+"','" +letters_track[ii]+"_ratio','" +letters_track[ii]+"_ratio_cluster')", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    }
-                });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio on "+letters_track[ii]+"_ratio(source_id,source_dataset_id)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio_cluster (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio_cluster on "+letters_track[ii]+"_ratio_cluster(source_id,source_dataset_id)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
+                self.createRatioTable(letters_track[ii]);
             }
         });
 
@@ -1276,6 +1243,8 @@ class Analysis {
             function(){
                 self.getDataSets(function(rows) {
                     self.analyzeImpl(config, rows, 0, function() {
+                        ここから
+                        pair ではなく文字だけ渡すか
                         self.createRatioRecords(pairs,"sequences",function(){self.createRatioRecords(pairs_cluster,"clusters",callback)});
                     });
                 });
@@ -1294,6 +1263,56 @@ class Analysis {
                 throw err;
             }
             callback(rows);
+        });
+    }
+    createRatioTable(letter){
+        const checker = RegExp('[^A-Za-z0-9_]');
+        if(checker.test(letter)){
+            throw letter+" has irregular letter [A-Za-z0-9_]!";
+        }
+        /*
+        self.db.run("CREATE TABLE ratio_tables (letter TEXT,sequence_table_name TEXT,cluster_table_name TEXT)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            }
+        });
+        */
+        self.db.run("INSERT INTO ratio_tables (letter,sequence_table_name,cluster_table_name) VALUES (?,?,?)",
+        [letter,letter+"_ratio",letter+"_ratio_cluster"],
+        (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            }
+        });
+        self.db.run("CREATE TABLE "+letter+"_ratio (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE INDEX index_"+letter+"_ratio on "+letters+"_ratio(source_id,source_dataset_id,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE TABLE "+letter+"_ratio_cluster (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE INDEX index_"+letter+"_ratio_cluster on "+letters+"_ratio_cluster(source_id,source_dataset_id,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
         });
     }
 

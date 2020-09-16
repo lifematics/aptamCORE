@@ -435,6 +435,10 @@ app.on('ready', () => {
     ipcMain.on('set-fastq',(event,args)=>{
         fastqList = args[0];
     });
+
+    ipcMain.on('convert-old-file', (event, args) => {
+        まだ途中
+    });
     ipcMain.on('onSorted', (event, args) => {
         analysis.updateOrders(args, function() {
             sendDataSetList();
