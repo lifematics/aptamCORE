@@ -735,8 +735,11 @@ class Analysis {
         this.insertSequencesForTheClusterImpl(datasetId, clusterId, sequences, 0, sequenceStatement, callback);
     }
 
+    getRatioTableName(letter,source){
+        return letter+"_ratio_"+source;
+    }
     //letter_tablename_pair = [[letter,tablename],...]
-    createRatioRecords(letter_tablename_pair,source_table_name,callback){
+    createRatioRecords(letter_array,source_table_name,callback){
         assert(source_table_name == "clusters" || source_table_name == "sequences");
         let self = this;
         self.db.serialize(function () {
@@ -747,27 +750,27 @@ class Analysis {
                     if (err){ throw err;}
                     //HEADPRIMER-VARIABLE-TAILPRIMER という形である必要がある。
                     //HEAD/TAILPRIMER が無い場合は -VARIABLE- という文字列にしておくこと。
-                    let letters = res["sequence"].split('-')[1].split('');
-                    if(letters.length == 0){
+                    let seqarray = res["sequence"].split('-')[1].split('');
+                    if(seqarray.length == 0){
                         return;
                     }
                     let hscount = {};
-                    for(let ii = 0;ii < letter_tablename_pair.length;ii++){
-                        hscount[letter_tablename_pair[ii][0]] = 0;
+                    for(let ii = 0;ii < letter_array.length;ii++){
+                        hscount[letter_array[ii]] = 0;
                     }
                     let lcount = 0;
-                    for(let ii = 0;ii < letters.length;ii++){
-                        if(letters[ii] == "-"){
+                    for(let ii = 0;ii < seqarray.length;ii++){
+                        if(seqarray[ii] == "-"){
                             continue;
                         }
                         lcount += 1;
-                        if(letters[ii] in hscount){
-                          hscount[letters[ii]] +=1 ; 
+                        if(seqarray[ii] in hscount){
+                          hscount[seqarray[ii]] +=1 ; 
                         }
                     }
                     if(lcount > 0){
-                        for(let ii = 0;ii < letter_tablename_pair.length;ii++){
-                            hscount[letter_tablename_pair[ii][0]] /= lcount;
+                        for(let ii = 0;ii < letter_array.length;ii++){
+                            hscount[letter_array[ii]] /= lcount;
                         }
                     }
                     vss.push([res["id"],res["dataset_id"],hscount]);
@@ -780,9 +783,9 @@ class Analysis {
                         }];
                         while(vss.length > 0){
                             let vv = vss.pop();
-                            for(let kk = 0;kk < letter_tablename_pair.length;kk++){
-                                let tablename = letter_tablename_pair[kk][1];
-                                let val = vv[2][letter_tablename_pair[kk][0]];
+                            for(let kk = 0;kk < letter_array.length;kk++){
+                                let tablename = self.getRatioTableName(letter_array[kk],source_table_name);
+                                let val = vv[2][letter_array[kk]];
                                 callbacks0.push(function() {
                                     self.db.run("INSERT INTO "+tablename+" (source_id, source_dataset_id, value) VALUES (?, ?, ?)",
                                     [vv[0],vv[1],val]
@@ -803,24 +806,7 @@ class Analysis {
                     ,
 
                 ];
-                /*
-                for(let kk = 0;kk < letter_tablename_pair.length;kk++){
-                    if(letter_tablename_pair[kk][0] == "-" || letter_tablename_pair[kk][0] == "%"){
-                        throw letter_tablename_pair[kk][0]+" is not allowed for calculating ratio.";
-                    }
-                    callbacks1.push(function() {self.db.run("CREATE TABLE "+letter_tablename_pair[kk][1]+"(source_id INTEGER,dataset_id INTEGER,value REAL , FOREIGN KEY(source_id) REFERENCES "+source_table_name+"(id))"
-                    ,[], function (error) {
-                        if(error){
-                            recordLog(error);
-                        }
-                        if(callbacks1.length > 0){
-                            let pfunc = callbacks1.pop();
-                            pfunc.call();
-                        }
-                    });
-                    });
-                }
-                */
+
                 self.db.exec('COMMIT',function(){callbacks1.pop().call();});
             });
         });
@@ -1224,49 +1210,9 @@ class Analysis {
 
             for(let ii = 0;ii < letters_track.length;ii++){
                 console.log("pushing "+ii);
-                self.db.run("INSERT INTO ratio_tables (letter,sequence_table_name,cluster_table_name) VALUES ('" +letters_track[ii]+"','" +letters_track[ii]+"_ratio','" +letters_track[ii]+"_ratio_cluster')", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    }
-                });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio on "+letters_track[ii]+"_ratio(source_id,source_dataset_id)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE TABLE "+letters_track[ii]+"_ratio_cluster (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
-                self.db.run("CREATE INDEX index_"+letters_track[ii]+"_ratio_cluster on "+letters_track[ii]+"_ratio_cluster(source_id,source_dataset_id)", (error) => {
-                    if (error) {
-                        self.notifier.send(error);
-                        throw error;
-                    } else {
-                    }
-                });
+                self.createRatioTable(letters_track[ii]);
             }
         });
-
-        let pairs = [];
-        let pairs_cluster = [];
-        for(let ii = 0;ii < letters_track.length;ii++){
-            pairs.push([letters_track[ii],letters_track[ii]+"_ratio"]);
-            pairs_cluster.push([letters_track[ii],letters_track[ii]+"_ratio_cluster"]);
-        }
 
         self.addFastqToDB(config,files,0,
                 function(config_,files_,index,callback1,callback2){
@@ -1276,13 +1222,16 @@ class Analysis {
             function(){
                 self.getDataSets(function(rows) {
                     self.analyzeImpl(config, rows, 0, function() {
-                        self.createRatioRecords(pairs,"sequences",function(){self.createRatioRecords(pairs_cluster,"clusters",callback)});
+                        //ここから
+                        //pair ではなく文字だけ渡すか
+                        self.createRatioRecords(letters_track,"sequences",function(){self.createRatioRecords(letters_track,"clusters",callback)});
                     });
                 });
             }
         );
     }
-
+    
+    
     getDataSets(callback) {
         if (this.db == null) {
             recordLog('db is not opened.');
@@ -1294,6 +1243,53 @@ class Analysis {
                 throw err;
             }
             callback(rows);
+        });
+    }
+
+
+    createRatioTable(letter){
+        const checker = RegExp('[^A-Za-z0-9_]');
+        if(checker.test(letter)){
+            throw letter+" has irregular letter [A-Za-z0-9_]!";
+        }
+        let self = this;
+        let tablename_seq = self.getRatioTableName(letter,"sequences");
+        let tablename_clus = self.getRatioTableName(letter,"clusters");
+        self.db.run("INSERT INTO ratio_tables (letter,sequence_table_name,cluster_table_name) VALUES (?,?,?)",
+        [letter,tablename_seq,tablename_clus],
+        (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            }
+        });
+        self.db.run("CREATE TABLE "+tablename_seq+"(source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE INDEX index_"+tablename_seq+" on "+tablename_seq+"(source_id,source_dataset_id,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE TABLE "+tablename_clus+" (source_id INTEGER,source_dataset_id INTEGER,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
+        });
+        self.db.run("CREATE INDEX index_"+tablename_clus+" on "+tablename_clus+"(source_id,source_dataset_id,value)", (error) => {
+            if (error) {
+                self.notifier.send(error);
+                throw error;
+            } else {
+            }
         });
     }
 
@@ -1355,6 +1351,7 @@ class Analysis {
     }
     
     setSearchConditions(target, qline, conditions, threshold) {
+        let self = this;
         if (threshold) {
             if (threshold['count'] > 0) {
                 qline.addToWhere(' AND ' + target + '.count >= ? ',threshold['count']);
@@ -1362,7 +1359,7 @@ class Analysis {
             let letters_chk = ['A','T','G','C'];
             for(let ii = 0;ii < letters_chk.length;ii++){
                 let chkk = letters_chk[ii];
-                let tablename = (target == "clusters")?(chkk+"_ratio_cluster"):(chkk+"_ratio");
+                let tablename = self.getRatioTableName(chkk,target);
                 
                 let add_join = false;
                 if(chkk in threshold && threshold[chkk] < 100.0){
