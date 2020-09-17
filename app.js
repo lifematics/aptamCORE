@@ -1,12 +1,13 @@
-const {app, Menu, BrowserWindow, ipcMain, dialog, webContents} = require('electron')
-const path = require('path')
-const url = require('url')
-const process = require('process')
-const Analysis = require('./src/libs/analysis')
-const AppPreferences = require('./src/libs/preferences')
-const fs = require('fs')
+const {app, Menu, BrowserWindow, ipcMain, dialog, webContents} = require('electron');
+const path = require('path');
+const url = require('url');
+const process = require('process');
+const Analysis = require('./src/libs/analysis');
+const AppPreferences = require('./src/libs/preferences');
+const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 //ToDo 名前の変更
-const AnalysisPresets = require('./src/libs/presets')
+const AnalysisPresets = require('./src/libs/presets');
 
 var window = null;
 var analysis = null;
@@ -432,18 +433,19 @@ app.on('ready', () => {
     ipcMain.on('show-add-dataset-dialog',(event,args)=>{
         showAddDatasetDialog(args["start_pos"],args["file_label"],args["allow_multi"],args["overwrite"]);
     });
+
     ipcMain.on('set-fastq',(event,args)=>{
         fastqList = args[0];
     });
 
-    ipcMain.on('convert-old-file', (event, args) => {
-        まだ途中
-    });
+    
+
     ipcMain.on('onSorted', (event, args) => {
         analysis.updateOrders(args, function() {
             sendDataSetList();
         });
     });
+
     ipcMain.on('load-compare-data', (event, args) => {
         let dataSetId = args["dataset_id"];
         let numberOfCompare = args["number_of_compare"];
@@ -786,9 +788,11 @@ function showOpenAnalysisDialog(){
     }).then(function(result) {
         let filenames = result.filePaths;
         if (filenames.length > 0) {
-            analysis.setPath(filenames[0], (analysisConfig) => {
-                analysisChanged(analysisConfig);
-            });
+            checkOldFileFormat(filenames[0],function(){
+                analysis.setPath(filenames[0], (analysisConfig) => {
+                    analysisChanged(analysisConfig);
+                });
+            },null);
         }
     });
 }
@@ -890,4 +894,65 @@ function createMenu() {
       })
     }
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+//ipcMain.on('convert-old-file', (event, args) => {
+function checkOldFileFormat(filepath,default_function,cancel_function){
+    
+    let chkdb = new sqlite3.Database(filepath);
+    chkdb.get("SELECT * FROM sqlite_master WHERE name='ratio_tables'", function(error, row) {
+        chkdb.close();
+        if(row && row.length != 0){
+            default_function();
+        }else{
+            var options = {
+                type: 'info',
+                buttons: ['OK','Cancel'],
+                title: 'Old file format',
+                message: 'The format of this file is old. Please specify new db file path for the converted file.'
+            };
+            dialog.showMessageBox(window, options).then(function(result){
+                if(result.response === 1){
+                    if(cancel_function){
+                        cancel_function();
+                    }
+                    return;
+                }
+                dialog.showSaveDialog(window, {
+                    properties: ['promptToCreate'],
+                    title: 'Enter New DB File name',
+                    defaultPath: ".",
+                    filters: [
+                        {name: 'Analysis File', extensions: ['db']},
+                    ]
+                }).then(function(result) {
+                    let newfilename = result.filePath;
+                    if (newfilename) {
+                        if(newfilename != filepath){
+                            fs.copyFileSync(filepath,newfilename);
+                        }
+                        analysis.setPath(newfilename, (analysisConfig) => {
+                            let letters_track = ["A","C","G","T"];
+                            analysis.db.serialize(() => {
+                            analysis.db.run("CREATE TABLE ratio_tables (letter TEXT,sequence_table_name TEXT,cluster_table_name TEXT)", (error) => {
+                                if (error) {
+                                    analysis.notifier.send(error);
+                                    throw error;
+                                }
+                            });
+                
+                            for(let ii = 0;ii < letters_track.length;ii++){
+                                console.log("pushing "+ii);
+                                analysis.createRatioTable(letters_track[ii]);
+                            }
+                            analysis.createRatioRecords(letters_track,"sequences",function(){
+                                    analysis.createRatioRecords(letters_track,"clusters",function(){analysisChanged(analysisConfig);})
+                                });
+                            }); 
+                            
+                        });
+                    }
+                });
+            });
+        }
+    }); 
 }
