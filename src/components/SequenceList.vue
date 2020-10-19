@@ -21,18 +21,18 @@
             <div class="filter" id="filter_seq_div">
                 <div class="row">
                     <div class="col-sm-9 keyword"><span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" v-model="search_key" placeholder='Search Key'/></div>
-                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" id="text_threshold_sequence_ratio" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input id="text_threshold_sequence_a_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input id="text_threshold_sequence_a" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input id="text_threshold_sequence_c_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input id="text_threshold_sequence_c" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input id="text_threshold_sequence_g_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input id="text_threshold_sequence_g" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input id="text_threshold_sequence_t_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input id="text_threshold_sequence_t" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12" style="text-align: center">
-                    <button value="Filter" v-on:click="searchSequencesThreshold">Search</button>
+                    <button id="button_sequence_search" value="Filter" v-on:click="searchSequencesThreshold">Search</button>
                 </div>
             </div>
             <table class="sequence-table">
