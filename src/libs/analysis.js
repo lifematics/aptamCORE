@@ -463,8 +463,8 @@ class Analysis {
 
     filterSequences(config, input, callback) {
         let self = this;
-        let full = path.join(this.tempDir, path.basename(input) + '.filtered.full.fasta');
-        let variable = path.join(this.tempDir, path.basename(input) + '.filtered.variable.fasta');
+        let full = path.join(this.tempDir, path.basename(input) + '.f.f.fasta');
+        let variable = path.join(this.tempDir, path.basename(input) + '.f.v.fasta');
         let command = '"'+this.base + FILTER_CMD + '" '
             + ' --input "' + input + '" --full "' + full + '" --variable "' + variable + '"'
             + ' --quality ' + config.quality_criteria + ' --criteria ' + config.number_of_low_quality_elements
@@ -486,8 +486,8 @@ class Analysis {
         let clusters = input + '.clusters';
         //let command =  this.base +  CLUSTER_CMD + ' -L/usr/local/Cellar/gcc@6/6.5.0_4/lib/gcc/6' + ' ' + CLUSTER_ARGS
         let command =  '"'+this.base +  CLUSTER_CMD + '" ' + CLUSTER_ARGS
-            + ' -i ' + input + ' -o ' + clusters
-            + ' -c ' + (config.clustering_criteria / 100.0);
+            + ' -i "' + input + '" -o "' + clusters
+            + '" -c ' + (config.clustering_criteria / 100.0);
         if(config.cluster_complementary_sequences){
             command = command + " -r 1 ";
         }else{
