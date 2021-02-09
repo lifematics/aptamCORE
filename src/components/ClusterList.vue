@@ -30,18 +30,18 @@
                         <span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.key" placeholder='Search Key'/>
                         <label><input type="checkbox" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.primary_only" />Primary Only</label>
                     </div>
-                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" id="text_threshold_cluster_ratio" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input id="text_threshold_cluster_a_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input id="text_threshold_cluster_a" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input id="text_threshold_cluster_c_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input id="text_threshold_cluster_c" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input id="text_threshold_cluster_g_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input id="text_threshold_cluster_g" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input id="text_threshold_cluster_t_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input id="text_threshold_cluster_t" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12" style="text-align: center">
-                    <button value="Filter" v-on:click="searchClusterThreshold">Search</button>
+                    <button id="button_cluster_search" value="Filter" v-on:click="searchClusterThreshold">Search</button>
                 </div>
             </div>
 <!--            <div class="row">-->
