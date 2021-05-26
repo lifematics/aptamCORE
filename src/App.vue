@@ -391,7 +391,7 @@
             getClusterList: function() {
                 this.isLoading = true;
                 let threshold = {
-                    count: Math.ceil(this.seqCountOfDataSet * this.clusterThreshold['ratio'] / 100.0),
+                    count: this.clusterThreshold['count'],
                     A: this.clusterThreshold['A'],
                     C: this.clusterThreshold['C'],
                     G: this.clusterThreshold['G'],

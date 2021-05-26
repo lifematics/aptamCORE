@@ -304,10 +304,16 @@ class Analysis {
         let self = this;
         if (filepath == null) {
             this.path = null;
+            if(this.db){
+                this.db.close();
+            }
             this.db = null;
             callback(null);
         } else {
             this.path = filepath;
+            if(this.db){
+                this.db.close();
+            }
             this.db = new sqlite3.Database(this.path);
             this.db.get("SELECT * FROM configs", function(error, row) {
                 if(row["cluster_complementary_sequences"] === 0){
@@ -1355,6 +1361,8 @@ class Analysis {
         if (threshold) {
             if (threshold['count'] > 0) {
                 qline.addToWhere(' AND ' + target + '.count >= ? ',threshold['count']);
+            }else if(threshold['ratio'] > 0){
+                throw new Exception("'ratio' must be converted to count!");
             }
             let letters_chk = ['A','T','G','C'];
             for(let ii = 0;ii < letters_chk.length;ii++){
@@ -1548,6 +1556,7 @@ class Analysis {
         const self = this;
         recordLog('getClusters');
         recordLog(conditions);
+        console.log(threshold);
         self.getDataSetClusterCount(dataSetId, conditions, threshold, function (numClusters) {
             self.getDataSetSequenceCount(dataSetId,function(count) {
                 if (conditions && conditions['primary_only']) {

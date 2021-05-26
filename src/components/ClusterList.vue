@@ -120,6 +120,7 @@ export default {
         this.conditions['key'] = this.clusterSearchConditions['key'];
         this.conditions['primary_only'] = this.clusterSearchConditions['primary_only'];
         this.threshold['ratio'] = this.clusterThreshold['ratio'];
+        this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
         this.threshold['A'] = this.clusterThreshold['A'];
         this.threshold['C'] = this.clusterThreshold['C'];
         this.threshold['G'] = this.clusterThreshold['G'];
@@ -146,6 +147,7 @@ export default {
             }, 
             clusterSubFrame_This:"member",
             threshold: {
+                count:0,
                 ratio: 0,
                 A: 100,
                 C: 100,
@@ -180,11 +182,13 @@ export default {
             }
         },
         exportFile: function() {
+            this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
         },
         searchClusterThreshold: function() {
             let ddiv = document.getElementById("filter_cluster_div");
             ddiv.style["background-color"] = "#ffffff";
+            this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
             this.$emit('searchClusterThreshold', this.conditions, this.threshold);
         },
         nextPage: function() {
