@@ -52,6 +52,7 @@
             <table class="sequence-table">
                 <tr>
                     <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
+                    <th class="index" v-if="preferences.view.items.includes('copy_and_go_button')">Copy and Go</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Family ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">Representative NGS ID</th>
@@ -70,7 +71,14 @@
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
                          v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
-                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2])" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],null)" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_and_go_button')">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_1" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_1" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_1)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_2" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_2" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_2)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_3" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_3" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_3)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_4" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_4" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_4)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_5" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_5" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_5)" value="■">
+                    </td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -209,7 +217,7 @@ export default {
                 nodeList[i].style.backgroundColor = newColor;
             }
         },
-        copySequence: function(h,v,t){
+        copySequence: function(h,v,t,url){
             let ret = "";
             if(this.preferences.view.items.includes("head")){
                 ret += h;
@@ -221,6 +229,9 @@ export default {
                 ret += t;
             }
             clipboard.writeText(ret);
+            if(url){
+                ipcRenderer.send('open-url',[url]);
+            }
         }
     }
 }

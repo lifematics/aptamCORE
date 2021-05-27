@@ -71,6 +71,7 @@ let preferences_hs_ = {
                                 'type': 'checkbox',
                                 'options': [
                                     {'label': 'Copy Sequence Button', 'value': 'copy_button'},
+                                    {'label': 'Copy and Go Button', 'value': 'copy_and_go_button'},
                                     {'label': 'ID', 'value': 'id'},
                                     {'label': 'NGS ID', 'value': 'ngs_id'},
                                     {'label': 'Head', 'value': 'head'},
@@ -196,6 +197,45 @@ let preferences_hs_ = {
                                 'type': 'color',
                                 'format': 'hex',
                             }
+                        ]
+                    }
+                ],
+            },
+        },
+        {
+            'id': 'copy_and_go',
+            'label': 'Copy and Go',
+            'icon': 'spaceship',
+            'form': {
+                'groups': [
+                    {
+                        'label': 'Target URL',
+                        'fields': [
+                            {
+                                'label': 'URL 1',
+                                'key': 'copy_and_go_url_1',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 2',
+                                'key': 'copy_and_go_url_2',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 3',
+                                'key': 'copy_and_go_url_3',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 4',
+                                'key': 'copy_and_go_url_4',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 5',
+                                'key': 'copy_and_go_url_5',
+                                'type': 'text',
+                            },
                         ]
                     }
                 ],

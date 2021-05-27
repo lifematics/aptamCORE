@@ -173,6 +173,9 @@ app.on('ready', () => {
     ipcMain.on('set-default-file-path', (event, args) => {
         defaultFilePath_debug = args["defaultFilePath"];
     });
+    ipcMain.on('open-url', (event, args) => {
+        require('electron').shell.openExternal(args[0]);
+    });
 
     ipcMain.on('load-preferences', (event, args) => {
         window.webContents.send('preferencesChanged', appPreferences.get());
