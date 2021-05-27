@@ -1,12 +1,13 @@
-const {app, Menu, BrowserWindow, ipcMain, dialog} = require('electron')
-const path = require('path')
-const url = require('url')
-const process = require('process')
-const Analysis = require('./src/libs/analysis')
-const AppPreferences = require('./src/libs/preferences')
-const fs = require('fs')
+const {app, Menu, BrowserWindow, ipcMain, dialog, webContents} = require('electron');
+const path = require('path');
+const url = require('url');
+const process = require('process');
+const Analysis = require('./src/libs/analysis');
+const AppPreferences = require('./src/libs/preferences');
+const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 //ToDo 名前の変更
-const AnalysisPresets = require('./src/libs/presets')
+const AnalysisPresets = require('./src/libs/presets');
 
 var window = null;
 var analysis = null;
@@ -172,6 +173,9 @@ app.on('ready', () => {
     ipcMain.on('set-default-file-path', (event, args) => {
         defaultFilePath_debug = args["defaultFilePath"];
     });
+    ipcMain.on('open-url', (event, args) => {
+        require('electron').shell.openExternal(args[0]);
+    });
 
     ipcMain.on('load-preferences', (event, args) => {
         window.webContents.send('preferencesChanged', appPreferences.get());
@@ -291,17 +295,91 @@ app.on('ready', () => {
             });
         });
     });
-    ipcMain.on('analyze', (event, args) => {
+
+    ipcMain.on('estimate-finish-time',(event,args)=>{
         if(fastqList.length == 0){
             return;
         }
-
         let config = args[0];
         let kfunc = function(){ analysis.contFastqReads(
             fastqList[0]['file1']
             ,function(){
                 let ssdata = statisticData.get();
-                if(ssdata['estim_total_beta']){//ToDo: fastq 全部見る
+                if(ssdata['estim_total_beta']){
+                    let ctime = 0;
+                    for(let fii=0;fii < fastqList.length;fii++){
+                        if(fastqList[fii]["file1"].length > 0){
+                            if(analysis.numEntries[fastqList[fii]['file1']]){
+                                let v = [
+                                    1.0,
+                                    analysis.numEntries[fastqList[fii]['file1']],
+                                    config['clustering_criteria'],
+                                    config['max_variable_length']
+                                ];
+                                ctime += analysis.estimateProcessingTime(v,ssdata['estim_total_beta']);
+                            }
+                        }
+                    }
+                    if(ctime){
+                        let dd = new Date();
+                        dd.setTime(Date.now()+ctime);//単位はミリ秒
+                        //window.webContents.send("set-etf","Estimated Finish Time: "+dd.toString());
+                        let d = (ctime/1000/60/60/24).toFixed(0);
+                        let h = (ctime/1000/60/60).toFixed(0);
+                        let m = (ctime/1000/60).toFixed(0);
+                        let s = (ctime/1000).toFixed(0);
+                        s -= m*60 - 0.0001;
+                        m -= h*60 - 0.0001;
+                        h -= d*24 - 0.0001;
+                        s = s.toFixed(0);
+                        m = m.toFixed(0);
+                        h = h.toFixed(0);
+
+                        window.webContents.send("set-etf",d+" days, "+h+" hours, "+m+" mins, "+s+" secs");
+                    }else{
+                        window.webContents.send("set-etf","Estimated Finish Time: N/A");
+                    }
+                }
+            });
+            window.webContents.send("setLoading",false);
+        };
+        
+
+        //全 FASTQ (forward のみ)に含まれる配列数をカウントする
+        window.webContents.send("setLoading",true);
+        let flist=[kfunc];
+        for(let kk = 1;kk < fastqList.length;kk++){
+            if(fastqList[kk]["file1"].length > 0){
+                let lfunc =  function(){
+                    analysis.contFastqReads(fastqList[kk]['file1'],flist.pop());
+                };
+                flist.push(lfunc);
+            }
+        }
+        flist.pop().call();
+
+    });
+
+
+    ipcMain.on('analyze', (event, args) => {
+        let flag = false;
+        for(let ii = 0;ii < fastqList.length;ii++){
+                if(fastqList[0]['file1'].length != 0){
+                    flag = true;
+                    break;
+                }
+        }
+        if(!flag){
+            return;
+        }
+
+        let config = args[0];
+        //上の関数のコピペなので何か変更がある場合どちらか消すこと
+        let kfunc = function(){ analysis.contFastqReads(
+            fastqList[0]['file1']
+            ,function(){
+                let ssdata = statisticData.get();
+                if(ssdata['estim_total_beta']){
                     let ctime = 0;
                     for(let fii=0;fii < fastqList.length;fii++){
                         if(fastqList[fii]["file1"].length > 0){
@@ -358,14 +436,19 @@ app.on('ready', () => {
     ipcMain.on('show-add-dataset-dialog',(event,args)=>{
         showAddDatasetDialog(args["start_pos"],args["file_label"],args["allow_multi"],args["overwrite"]);
     });
+
     ipcMain.on('set-fastq',(event,args)=>{
         fastqList = args[0];
     });
+
+    
+
     ipcMain.on('onSorted', (event, args) => {
         analysis.updateOrders(args, function() {
             sendDataSetList();
         });
     });
+
     ipcMain.on('load-compare-data', (event, args) => {
         let dataSetId = args["dataset_id"];
         let numberOfCompare = args["number_of_compare"];
@@ -708,9 +791,11 @@ function showOpenAnalysisDialog(){
     }).then(function(result) {
         let filenames = result.filePaths;
         if (filenames.length > 0) {
-            analysis.setPath(filenames[0], (analysisConfig) => {
-                analysisChanged(analysisConfig);
-            });
+            checkOldFileFormat(filenames[0],function(){
+                analysis.setPath(filenames[0], (analysisConfig) => {
+                    analysisChanged(analysisConfig);
+                });
+            },null);
         }
     });
 }
@@ -812,4 +897,65 @@ function createMenu() {
       })
     }
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+//ipcMain.on('convert-old-file', (event, args) => {
+function checkOldFileFormat(filepath,default_function,cancel_function){
+    
+    let chkdb = new sqlite3.Database(filepath);
+    chkdb.get("SELECT * FROM sqlite_master WHERE name='ratio_tables'", function(error, row) {
+        chkdb.close();
+        if(row && row.length != 0){
+            default_function();
+        }else{
+            var options = {
+                type: 'info',
+                buttons: ['OK','Cancel'],
+                title: 'Old file format',
+                message: 'The format of this file is old. Please specify new db file path for the converted file.'
+            };
+            dialog.showMessageBox(window, options).then(function(result){
+                if(result.response === 1){
+                    if(cancel_function){
+                        cancel_function();
+                    }
+                    return;
+                }
+                dialog.showSaveDialog(window, {
+                    properties: ['promptToCreate'],
+                    title: 'Enter New DB File name',
+                    defaultPath: ".",
+                    filters: [
+                        {name: 'Analysis File', extensions: ['db']},
+                    ]
+                }).then(function(result) {
+                    let newfilename = result.filePath;
+                    if (newfilename) {
+                        if(newfilename != filepath){
+                            fs.copyFileSync(filepath,newfilename);
+                        }
+                        analysis.setPath(newfilename, (analysisConfig) => {
+                            let letters_track = ["A","C","G","T"];
+                            analysis.db.serialize(() => {
+                            analysis.db.run("CREATE TABLE ratio_tables (letter TEXT,sequence_table_name TEXT,cluster_table_name TEXT)", (error) => {
+                                if (error) {
+                                    analysis.notifier.send(error);
+                                    throw error;
+                                }
+                            });
+                
+                            for(let ii = 0;ii < letters_track.length;ii++){
+                                console.log("pushing "+ii);
+                                analysis.createRatioTable(letters_track[ii]);
+                            }
+                            analysis.createRatioRecords(letters_track,"sequences",function(){
+                                    analysis.createRatioRecords(letters_track,"clusters",function(){analysisChanged(analysisConfig);})
+                                });
+                            }); 
+                            
+                        });
+                    }
+                });
+            });
+        }
+    }); 
 }

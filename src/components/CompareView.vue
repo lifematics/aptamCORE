@@ -49,6 +49,11 @@
         </div>
         <div class="graph-pane" v-for="(graph, index) in chartData" :key="index" :id="graph.id" style="float: left">
             <button class="copy-button" v-on:click="copySequence" :name="index">Copy Sequence</button>
+            <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_1" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_1" type="button" v-on:click="copySequenceAndGo(options[index],preferences.copy_and_go.copy_and_go_url_1)" value="■">
+            <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_2" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_2" type="button" v-on:click="copySequenceAndGo(options[index],preferences.copy_and_go.copy_and_go_url_2)" value="■">
+            <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_3" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_3" type="button" v-on:click="copySequenceAndGo(options[index],preferences.copy_and_go.copy_and_go_url_3)" value="■">
+            <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_4" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_4" type="button" v-on:click="copySequenceAndGo(options[index],preferences.copy_and_go.copy_and_go_url_4)" value="■">
+            <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_5" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_5" type="button" v-on:click="copySequenceAndGo(options[index],preferences.copy_and_go.copy_and_go_url_5)" value="■">
             <compare-graph :chartData="chartData[index]" :options="options[index]" :width="graphWidth" :height="graphHeight"></compare-graph>
         </div>
     </div>
@@ -152,6 +157,18 @@ export default {
             let option = this.options[index];
             if(option){
                 clipboard.writeText(option.title.text);
+            }else{
+                clipboard.writeText("undefined");
+            }
+        },
+        copySequenceAndGo: function(option,url) {
+            if(option){
+                const regex = /.+:[\s]*/ig;
+                let xtex = option.title.text.replaceAll(regex, "");
+                clipboard.writeText(xtex);
+                if(url){
+                    ipcRenderer.send('open-url',[url]);
+                }
             }else{
                 clipboard.writeText("undefined");
             }

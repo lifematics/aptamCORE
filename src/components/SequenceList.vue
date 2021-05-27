@@ -21,23 +21,24 @@
             <div class="filter" id="filter_seq_div">
                 <div class="row">
                     <div class="col-sm-9 keyword"><span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" v-model="search_key" placeholder='Search Key'/></div>
-                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" id="text_threshold_sequence_ratio" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input id="text_threshold_sequence_a_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input id="text_threshold_sequence_a" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input id="text_threshold_sequence_c_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input id="text_threshold_sequence_c" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input id="text_threshold_sequence_g_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input id="text_threshold_sequence_g" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input id="text_threshold_sequence_t_lb" type="number" v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input id="text_threshold_sequence_t" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_seq_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12" style="text-align: center">
-                    <button value="Filter" v-on:click="searchSequencesThreshold">Search</button>
+                    <button id="button_sequence_search" value="Filter" v-on:click="searchSequencesThreshold">Search</button>
                 </div>
             </div>
             <table class="sequence-table">
                 <tr>
                     <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
+                    <th class="index" v-if="preferences.view.items.includes('copy_and_go_button')">Copy and Go</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Sequence ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">NGS ID</th>
@@ -57,7 +58,14 @@
                 <tr v-for="(sequence, index) in sequenceList" :key="index" 
                 v-bind:class="[sequence.id == selected ? 'selected' : '']"
                 v-on:click="sequenceSelected(sequence.sequence[1],$event);setSequenceSelected(sequence.id)">
-                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2])" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],null)" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_and_go_button')">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_1" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_1" type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],preferences.copy_and_go.copy_and_go_url_1)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_2" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_2" type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],preferences.copy_and_go.copy_and_go_url_2)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_3" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_3" type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],preferences.copy_and_go.copy_and_go_url_3)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_4" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_4" type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],preferences.copy_and_go.copy_and_go_url_4)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_5" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_5" type="button" v-on:click="copySequence(sequence.sequence[0],sequence.sequence[1],sequence.sequence[2],preferences.copy_and_go.copy_and_go_url_5)" value="■">
+                    </td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{sequence.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{sequence.name}}</td>
@@ -173,7 +181,8 @@ export default {
         prevPage: function() {
             this.$emit('prevPage');
         },
-        copySequence: function(h,v,t){
+
+        copySequence: function(h,v,t,url){
             let ret = "";
             if(this.preferences.view.items.includes("head")){
                 ret += h;
@@ -185,6 +194,9 @@ export default {
                 ret += t;
             }
             clipboard.writeText(ret);
+            if(url){
+                ipcRenderer.send('open-url',[url]);
+            }
         }
     }
 }

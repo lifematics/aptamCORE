@@ -39,7 +39,7 @@ let defaultPreferences = {
     },
 };
 
-let preferences_hs = {
+let preferences_hs_ = {
 
     /**
      * Where should preferences be saved?
@@ -50,27 +50,6 @@ let preferences_hs = {
      * Default values.
      */
     'defaults': defaultPreferences,
-
-    /**
-     * If the `onLoad` method is specified, this function will be called immediately after
-     * preferences are loaded for the first time. The return value of this method will be stored as the
-     * preferences object.
-     */
-    'onLoad': (preferences) => {
-        Object.keys(defaultPreferences).forEach(function(section) {
-            if (!preferences[section]) {
-                preferences[section] = defaultPreferences[section];
-            } else {
-                Object.keys(defaultPreferences[section]).forEach(function(item) {
-                    if (!preferences[section][item]) {
-                        preferences[section][item] = defaultPreferences[section][item];
-                    }
-                });
-            }
-        });
-
-        return preferences;
-    },
 
     /**
      * The preferences window is divided into sections. Each section has a label, an icon, and one or
@@ -92,6 +71,7 @@ let preferences_hs = {
                                 'type': 'checkbox',
                                 'options': [
                                     {'label': 'Copy Sequence Button', 'value': 'copy_button'},
+                                    {'label': 'Copy and Go Button', 'value': 'copy_and_go_button'},
                                     {'label': 'ID', 'value': 'id'},
                                     {'label': 'NGS ID', 'value': 'ngs_id'},
                                     {'label': 'Head', 'value': 'head'},
@@ -222,12 +202,64 @@ let preferences_hs = {
                 ],
             },
         },
+        {
+            'id': 'copy_and_go',
+            'label': 'Copy and Go',
+            'icon': 'spaceship',
+            'form': {
+                'groups': [
+                    {
+                        'label': 'Target URL',
+                        'fields': [
+                            {
+                                'label': 'URL 1',
+                                'key': 'copy_and_go_url_1',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 2',
+                                'key': 'copy_and_go_url_2',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 3',
+                                'key': 'copy_and_go_url_3',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 4',
+                                'key': 'copy_and_go_url_4',
+                                'type': 'text',
+                            },
+                            {
+                                'label': 'URL 5',
+                                'key': 'copy_and_go_url_5',
+                                'type': 'text',
+                            },
+                        ]
+                    }
+                ],
+            },
+        },
         
     ],
 };
 
 class AppPreferences {
     constructor(has_license) {
+        let preferences_hs = JSON.parse(JSON.stringify(preferences_hs_));
+        
+        Object.keys(defaultPreferences).forEach(function(section) {
+            if (!preferences_hs[section]) {
+                preferences_hs[section] = defaultPreferences[section];
+            } else {
+                Object.keys(defaultPreferences[section]).forEach(function(item) {
+                    if (!preferences_hs[section][item]) {
+                        preferences_hs[section][item] = defaultPreferences[section][item];
+                    }
+                });
+            }
+        });
         if(has_license){
             defaultPreferences["notification"] = {
                 "mailgun_api_key": "<You need a license for this function.>",
@@ -262,6 +294,7 @@ class AppPreferences {
         }
         this.hasLicense = has_license;
         this.preferences = new ElectronPreferences(preferences_hs);
+        
     }
     show() {
         this.preferences.show();

@@ -30,18 +30,18 @@
                         <span class="label">Sequence:</span><input type="text" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.key" placeholder='Search Key'/>
                         <label><input type="checkbox" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" v-model="conditions.primary_only" />Primary Only</label>
                     </div>
-                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
+                    <div class="col-sm-3 ratio"><span class="label">Ratio &gt;=</span><input type="number" id="text_threshold_cluster_ratio" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder='Cluster Ratio' v-model="threshold.ratio" >%</div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-3 ratio"><span>A: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
-                    <div class="col-sm-3 ratio"><span>C: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
-                    <div class="col-sm-3 ratio"><span>G: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
-                    <div class="col-sm-3 ratio"><span>T: </span><input type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
+                    <div class="col-sm-3 ratio"><span>A: </span><input id="text_threshold_cluster_a_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of A" v-model="threshold.lb_A">-<input id="text_threshold_cluster_a" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of A" v-model="threshold.A">%</div>
+                    <div class="col-sm-3 ratio"><span>C: </span><input id="text_threshold_cluster_c_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of C" v-model="threshold.lb_C">-<input id="text_threshold_cluster_c" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of C" v-model="threshold.C">%</div>
+                    <div class="col-sm-3 ratio"><span>G: </span><input id="text_threshold_cluster_g_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of G" v-model="threshold.lb_G">-<input id="text_threshold_cluster_g" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of G" v-model="threshold.G">%</div>
+                    <div class="col-sm-3 ratio"><span>T: </span><input id="text_threshold_cluster_t_lb" type="number" v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" max=100 min=0 placeholder="Ratio of T" v-model="threshold.lb_T">-<input id="text_threshold_cluster_t" type="number" max=100 min=0 v-on:change="colorFilterBackground('filter_cluster_div','#ffaaaa')" placeholder="Ratio of T" v-model="threshold.T">%</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12" style="text-align: center">
-                    <button value="Filter" v-on:click="searchClusterThreshold">Search</button>
+                    <button id="button_cluster_search" value="Filter" v-on:click="searchClusterThreshold">Search</button>
                 </div>
             </div>
 <!--            <div class="row">-->
@@ -52,6 +52,7 @@
             <table class="sequence-table">
                 <tr>
                     <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
+                    <th class="index" v-if="preferences.view.items.includes('copy_and_go_button')">Copy and Go</th>
                     <th class="index">Index</th>
                     <th class="idCol" v-if="preferences.view.items.includes('id')">Family ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">Representative NGS ID</th>
@@ -70,7 +71,14 @@
                 <tr v-for="(cluster, index) in clusterList " :key="index" :id="cluster.id"
                          v-bind:class="[cluster.id == selected ? 'selected' : '']"
                          v-on:click="sequenceSelected(cluster.sequence[1],$event);clusterSelected(cluster.id, $event);">
-                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2])" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_button')"><input type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],null)" value="■"></td>
+                    <td v-if="preferences.view.items.includes('copy_and_go_button')">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_1" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_1" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_1)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_2" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_2" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_2)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_3" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_3" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_3)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_4" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_4" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_4)" value="■">
+                        <input v-b-popover.hover.top="preferences.copy_and_go.copy_and_go_url_5" v-if="preferences.view.items.includes('copy_and_go_button') && preferences.copy_and_go.copy_and_go_url_5" type="button" v-on:click="copySequence(cluster.sequence[0],cluster.sequence[1],cluster.sequence[2],preferences.copy_and_go.copy_and_go_url_5)" value="■">
+                    </td>
                     <td>{{ page.from + index }}</td>
                     <td class="idCol" v-if="preferences.view.items.includes('id')">{{cluster.id}}</td>
                     <td class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">{{cluster.seq_name}}</td>
@@ -120,6 +128,7 @@ export default {
         this.conditions['key'] = this.clusterSearchConditions['key'];
         this.conditions['primary_only'] = this.clusterSearchConditions['primary_only'];
         this.threshold['ratio'] = this.clusterThreshold['ratio'];
+        this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
         this.threshold['A'] = this.clusterThreshold['A'];
         this.threshold['C'] = this.clusterThreshold['C'];
         this.threshold['G'] = this.clusterThreshold['G'];
@@ -146,6 +155,7 @@ export default {
             }, 
             clusterSubFrame_This:"member",
             threshold: {
+                count:0,
                 ratio: 0,
                 A: 100,
                 C: 100,
@@ -180,11 +190,13 @@ export default {
             }
         },
         exportFile: function() {
+            this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
             ipcRenderer.send('export-cluster-data', [ this.dataSetId, this.conditions, this.threshold ]);
         },
         searchClusterThreshold: function() {
             let ddiv = document.getElementById("filter_cluster_div");
             ddiv.style["background-color"] = "#ffffff";
+            this.threshold['count'] = Math.ceil(this.threshold['ratio'] * this.totalCount / 100.0);
             this.$emit('searchClusterThreshold', this.conditions, this.threshold);
         },
         nextPage: function() {
@@ -205,7 +217,7 @@ export default {
                 nodeList[i].style.backgroundColor = newColor;
             }
         },
-        copySequence: function(h,v,t){
+        copySequence: function(h,v,t,url){
             let ret = "";
             if(this.preferences.view.items.includes("head")){
                 ret += h;
@@ -217,6 +229,9 @@ export default {
                 ret += t;
             }
             clipboard.writeText(ret);
+            if(url){
+                ipcRenderer.send('open-url',[url]);
+            }
         }
     }
 }
