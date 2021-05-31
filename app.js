@@ -256,7 +256,7 @@ app.on('ready', () => {
         //compare one からの呼び出しであることを示すフラグを filter settings に入れているがよくないかも
         //次に何か加えることがあれば変更
         if(args["cluster_id"]){
-            //Families パネルからの呼び出し
+            //Clusters パネルからの呼び出し
             analysis.getSequences(dataSetId, clusterId, key, listSize, page, threshold, (result) => {
                 let filterSettings = {'conditions':{'key':result['sequences'][0]['sequence'][1], primary_only:compareTarget == "cluster_representative"}
                 ,'threshold':{ratio: 0, A: 100, C: 100, G: 100, T: 100, lb_A: 0, lb_C: 0, lb_G: 0, lb_T: 0}
