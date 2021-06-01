@@ -337,7 +337,7 @@ app.on('ready', () => {
 
                         window.webContents.send("set-etf",d+" days, "+h+" hours, "+m+" mins, "+s+" secs");
                     }else{
-                        window.webContents.send("set-etf","Estimated Finish Time: N/A");
+                        window.webContents.send("set-etf","N/A");
                     }
                 }
             });
