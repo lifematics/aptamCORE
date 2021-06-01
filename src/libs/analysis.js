@@ -1599,11 +1599,11 @@ class Analysis {
         this.getClusterSequenceCountImpl(dataSetId, clusterId, { key: null }, null,'SUM(count)', callback);
     }
 
-    //sequence として返るのは文字列の配列であり、0 が 5' primer, 1 が variables, 2 が 3' primer
+    
     processSequenceData(sequences, representative, callback) {
         const self = this;
         let seqList = sequences.map(function(seq) {
-            let sequence = seq.sequence.split('-');
+            let sequence = seq.sequence.split('-');//sequence として返るのは文字列の配列であり、0 が 5' primer, 1 が variables, 2 が 3' primer
             let distance = '-';
             if (representative) {
                 distance = self.levenshteinDistance(sequence[1], representative[1]);
@@ -1631,6 +1631,7 @@ class Analysis {
         let clusterId = (cluster ? cluster.id : null);
         self.getClusterSequenceVariants(dataSetId, clusterId, { key: key, primary_only: true }, threshold, function(numVariants) {
             self.getClusterSequenceCount(dataSetId, clusterId, function (count) {
+                //クラスタに含まれる配列のカウントを取るために一度通している？冗長かもしれない。
                 let baseQuery = 'SELECT * FROM sequences ';
 
                 let baseParams = [];
@@ -1990,7 +1991,7 @@ class Analysis {
         let dataList=null;
         if(datatype == "cluster") {
             dataList = sqlresult.clusters;
-        }else if(datatype == "family_sequence"){
+        }else if(datatype == "cluster_sequence"){
             dataList = sqlresult.sequences;
         }else if (datatype== "sequence"){
             dataList = sqlresult.sequences;
@@ -2025,7 +2026,7 @@ class Analysis {
                     'c_ratio',
                     'g_ratio',
                     't_ratio'];
-                }else if(datatype == "family_sequence"){
+                }else if(datatype == "cluster_sequence"){
                     tags = [
                         'id',
                     'ngs_id',
@@ -2100,7 +2101,7 @@ class Analysis {
                         dats["ngs_id"] = ddat.name;
                     }
 
-                    if(datatype == "family_sequence"){
+                    if(datatype == "cluster_sequence"){
                         dats["variable_distance"] = ddat.distance;
                     }
 
@@ -2130,7 +2131,6 @@ class Analysis {
             if (error) {
                 throw error;
             }
-
             dataList.forEach((dataItem) => {
                 for (let i = 0; i < dataItem.count; ++i) {
                     fs.writeSync(fd, ">" + dataItem.id + "-" + dataItem.name.replace(' ', '_') + "-" + (i + 1) + "\r\n");
@@ -2149,18 +2149,55 @@ class Analysis {
 
     exportClusters(dataSetId, filename, conditions ,clusterThresholdNumber, callback) {
         const self = this;
-        self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
-            let ext = path.extname(filename);
-            if (ext == '.csv') {
-                self.exportAsCsv(filename, result, "cluster",callback);
-            } else if (ext == '.fasta') {
+        let ext = path.extname(filename);
+        if (ext == '.csv') {
+            self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
+                    self.exportAsCsv(filename, result, "cluster",callback);
+            });
+        } else if (ext == '.fasta') {
+            self.getClusters(dataSetId, conditions, null, null, clusterThresholdNumber, function (result) {
                 let clusters = result.clusters;
-                self.exportAsFasta(filename, clusters, callback);
-            } else{
-                callback();
-                throw new Exception(ext+" is not supported format.");
-            }
-        });
+                clusters.reverse();
+                //古いコード。Cluster Representative のコピーを出力する。
+                //self.exportAsFasta(filename, clusters, callback);
+
+                let threshold={ratio: 0, A: 100,C: 100,G: 100,T: 100,lb_A: 0,lb_C: 0,lb_G: 0,lb_T: 0};
+                let allseqs = [];
+                let flist2 = [];
+                let exporter = function(seqs){
+                    self.exportAsFasta(filename, seqs, callback);
+                };
+                for(let cc = 0;cc < clusters.length;cc++){
+                    flist2.push(
+                        function(){
+                            self.getSequences(dataSetId,clusters[cc].id , "", null, null, threshold, function (result) {
+                                for(let sii = 0;sii < result.sequences.length;sii++){
+                                    result.sequences[sii].name = "Cluster_"+clusters[cc].id+"-"+result.sequences[sii].name;
+                                }
+                                Array.prototype.push.apply(allseqs, result.sequences);
+                                if(flist2.length == 0){
+                                    let prev_func = exporter;
+                                    prev_func(allseqs);
+                                }else{
+                                    let prev_func = flist2.pop();
+                                    prev_func();
+                                }
+                            });
+                        }
+                    );
+                }
+                if (flist2.length == 0){
+                    self.exportAsFasta(filename, [], callback);
+                }else{
+                    let prev_func = flist2.pop();
+                    prev_func();
+                }
+            });
+
+        } else{
+            callback();
+            throw new Exception(ext+" is not supported format.");
+        }
     }
 
     exportSequences(dataSetId, clusterId, filename, key, threshold, callback) {
@@ -2169,7 +2206,7 @@ class Analysis {
             let ext = path.extname(filename);
             if (ext == '.csv') {
                 if(clusterId !== null){
-                    self.exportAsCsv(filename, result, "family_sequence", callback);
+                    self.exportAsCsv(filename, result, "cluster_sequence", callback);
                 }else{
                     self.exportAsCsv(filename, result, "sequence", callback);
                 }

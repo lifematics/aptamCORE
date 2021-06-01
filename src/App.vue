@@ -43,7 +43,7 @@
                         <button id="button_information" v-on:click="information" value="Information" v-bind:disabled="mode == 'config' || mode == 'home'">Information</button>
                     </div>
                     <div class="button-container">
-                        <button id="button_families" v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Families</button>
+                        <button id="button_clusters" v-on:click="cluster" value="View" v-bind:disabled="mode == 'config' || mode == 'home'">Clusters</button>
                     </div>
                     <div class="button-container">
                         <button id="button_sequences" v-on:click="sequence" value="Sequence" v-bind:disabled="mode == 'config' || mode == 'home'">Sequences</button>

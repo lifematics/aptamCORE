@@ -4,7 +4,7 @@
             <div class="row header-control">
                 <div class="col-sm-4">
                     <div class="row" id="subframediv">
-                        <h2>Families</h2>
+                        <h2>Clusters</h2>
                         <span style="margin-top:10px">
                         <input type="radio" id="radio_clusterlist_subframe_member" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="member"> <label for="radio_clusterlist_subframe_member">Member</label> 
                         <input type="radio" id="radio_clusterlist_subframe_compare" name="cluster_subframe" style="margin-left:10px;margin-right:10px;" v-model="clusterSubFrame_This"  v-on:change="changeSubFrame"  value="compare"> <label for="radio_clusterlist_subframe_compare">Compare</label> 
@@ -54,7 +54,7 @@
                     <th class="index" v-if="preferences.view.items.includes('copy_button')">Copy</th>
                     <th class="index" v-if="preferences.view.items.includes('copy_and_go_button')">Copy and Go</th>
                     <th class="index">Index</th>
-                    <th class="idCol" v-if="preferences.view.items.includes('id')">Family ID</th>
+                    <th class="idCol" v-if="preferences.view.items.includes('id')">Cluster ID</th>
                     <th class="ngsIdCol" v-if="preferences.view.items.includes('ngs_id')">Representative NGS ID</th>
                     <th class="headCol" v-if="preferences.view.items.includes('head')">Head</th>
                     <th class="variableCol" v-if="preferences.view.items.includes('variable')">Variable</th>
