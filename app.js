@@ -18,7 +18,7 @@ var windowTitle = '';
 var fastqList = [];//{file1:Fastq へのパス, file2:Fastq へのパス}のリスト。
 var scoringFunctionArr = [];
 var defaultFilePath_debug = null;
-
+var nameChangeWindow = null;
 
 
 //上昇傾向をとるためのスコア関数の設定
@@ -637,6 +637,22 @@ app.on('ready', () => {
     ipcMain.on('open-analysis', (event, args) => {
         showOpenAnalysisDialog();
     });
+    ipcMain.on('change-dataset-name',(event,args)=>{
+        let sql = "UPDATE datasets SET " +
+            " name = ? "+
+            " WHERE id = ? ";
+        let params = [
+            args['name'],args['id']
+        ];
+        analysis.db.run(sql, params, (error) => {
+            if (error) {
+                analysis.notifier.send(error);
+                throw error;
+            }
+            sendDataSetList();
+            console.log("OK");
+        });
+    });
 });
 
 function showFastqSaveDialog(args,counter,target_type){
@@ -762,6 +778,63 @@ function showAddDatasetDialog(startpos,filelabel,allowmulti,overwrite){
         }
     });
 }
+function shownameChangeWindow(){
+    if(nameChangeWindow){
+        nameChangeWindow.destroy();
+    }
+    nameChangeWindow = new BrowserWindow({ 
+        show: false ,
+        parent: window,
+        modal: true,
+        webPreferences: {
+            nodeIntegration: true
+          }
+    });
+    nameChangeWindow.setMenuBarVisibility(false);
+    nameChangeWindow.setTitle("Change Dataset Name");
+    analysis.getDataSets(function(rows){
+        let names = [];
+        
+        for(let ii = 0;ii < rows.length;ii++){
+            names.push("<div style=\"padding-top:3px;padding-bottom:3px;\"><b>"+rows[ii]['id']+": "+'<span id="name_'+rows[ii]['id']+'">'+rows[ii]['name']+'</span>'
+            +"</b><br>"+' <span id="path_'+rows[ii]['id']+'" style="font-size:small">'+rows[ii]['path']+"</span><br>"
+            +"<input id='dataset_"+rows[ii]['id']+"'type='text' size=40 value='"+rows[ii]['name']+"'>"
+            +" <input type='button' onclick='setName("+rows[ii]['id']+",\"textbox\")' value='Set'> <input type='button' onclick='setName("+rows[ii]['id']+",\""+rows[ii]['name']+"\")' value='Reset'></div>");
+        }
+
+        let jscode = `<script>
+        const { ipcRenderer } = require("electron");
+        function init(){
+            /*
+            ipcRenderer.on('set-dataset-block',function(event,args){
+                setDatasetBlock(args['id'],args['name'],args['path']);
+            });
+            */
+        }
+        function setName(idd,newname){
+            let ele = document.getElementById("dataset_"+idd);
+            if(newname === "textbox"){
+                newname = ele.value;
+            }else{
+                ele.value=newname;
+            }
+            ipcRenderer.send('change-dataset-name',{'id':idd,'name':newname});
+        }
+        function setDatasetBlock(idd,name,path){
+            document.getElementById("name_"+idd).innerHTML=name;
+            document.getElementById("path_"+idd).innerHTML=path;
+            console.log("++++++");
+            console.log(name);
+        }
+        </script>
+        `;
+        nameChangeWindow.loadURL('data:text/html;charset=utf-8,<html><head>'+jscode+'</head><body onload="init()" style="padding-left:2%;">\n'+names.join('')+'</body></html>');
+
+        nameChangeWindow.openDevTools();
+        nameChangeWindow.show();
+    });
+   
+}
 function writeToFile(filename,lines){
     fs.open(filename, 'w', function(error, fd) {
         if (error) {
@@ -776,6 +849,7 @@ function writeToFile(filename,lines){
     });
 }
 function showOpenAnalysisDialog(){
+    
     let defpath = ".";
     if(defaultFilePath_debug){
         defpath = defaultFilePath_debug;
@@ -819,6 +893,12 @@ function createMenu() {
                         analysis.setPath(null, () => {
                             analysisChanged(null);
                         });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Change Dataset Name', click: () => {
+                        shownameChangeWindow();
                     }
                 },
                 { type: 'separator' },
