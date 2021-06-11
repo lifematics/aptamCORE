@@ -150,7 +150,9 @@
                 }
             },
             mode:{
+
                 handler:function(){
+                    ipcRenderer.send('mode-changed',[this.mode]);
                     if(!(this.mode == "compare" || this.mode == "venn"|| this.mode == "home")){
                         if(this.activeDataSet !== null ){
                             this.getClusterList();

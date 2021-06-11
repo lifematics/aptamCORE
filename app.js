@@ -146,6 +146,8 @@ app.on('ready', () => {
         window.webContents.send('hasLicense', [appPreferences.hasLicense]);
         window.webContents.send('set-scoring-function-names',scoringFunctionNames);
     });
+    
+
     appPreferences.setListener(function(preferences) {
         window.webContents.send('preferencesChanged', preferences);
     });
@@ -169,7 +171,18 @@ app.on('ready', () => {
     });
 
     createMenu();
-
+    ipcMain.on('mode-changed',(event,args)=>{
+        if(args[0]=="home"){
+            Menu.getApplicationMenu().getMenuItemById('change-dataset-name').enabled = false;
+            Menu.getApplicationMenu().getMenuItemById('add-dataset').enabled = false;
+        }else if (args[0] == "config"){
+            Menu.getApplicationMenu().getMenuItemById('add-dataset').enabled = true;
+            Menu.getApplicationMenu().getMenuItemById('change-dataset-name').enabled = false;
+        }else{
+            Menu.getApplicationMenu().getMenuItemById('change-dataset-name').enabled = true;
+            Menu.getApplicationMenu().getMenuItemById('add-dataset').enabled = false;
+        }
+    });
     ipcMain.on('set-default-file-path', (event, args) => {
         defaultFilePath_debug = args["defaultFilePath"];
     });
@@ -442,6 +455,12 @@ app.on('ready', () => {
     });
 
     
+    ipcMain.on('close-namechange-window', function() {
+        if(nameChangeWindow){
+            nameChangeWindow.destroy();
+            nameChangeWindow = null;
+        }
+    });
 
     ipcMain.on('onSorted', (event, args) => {
         analysis.updateOrders(args, function() {
@@ -781,7 +800,9 @@ function showAddDatasetDialog(startpos,filelabel,allowmulti,overwrite){
 function shownameChangeWindow(){
     if(nameChangeWindow){
         nameChangeWindow.destroy();
+        nameChangeWindow = null;
     }
+    
     nameChangeWindow = new BrowserWindow({ 
         show: false ,
         parent: window,
@@ -820,15 +841,16 @@ function shownameChangeWindow(){
             }
             ipcRenderer.send('change-dataset-name',{'id':idd,'name':newname});
         }
+        function closeWindow(){
+            ipcRenderer.send('close-namechange-window',null);
+        }
         function setDatasetBlock(idd,name,path){
             document.getElementById("name_"+idd).innerHTML=name;
             document.getElementById("path_"+idd).innerHTML=path;
-            console.log("++++++");
-            console.log(name);
         }
         </script>
         `;
-        nameChangeWindow.loadURL('data:text/html;charset=utf-8,<html><head>'+jscode+'</head><body onload="init()" style="padding-left:2%;">\n'+names.join('')+'</body></html>');
+        nameChangeWindow.loadURL('data:text/html;charset=utf-8,<html><head>'+jscode+'</head><body onload="init()" style="padding-left:2%;">\n<div>'+names.join('')+'</div><p><input type="button" value="Close" onclick="closeWindow()"></p></body></html>');
 
         nameChangeWindow.openDevTools();
         nameChangeWindow.show();
@@ -897,32 +919,26 @@ function createMenu() {
                 },
                 { type: 'separator' },
                 {
-                    label: 'Change Dataset Name', click: () => {
-                        shownameChangeWindow();
-                    }
-                },
-                { type: 'separator' },
-                {
+                    id: "add-dataset",
                     label: 'Add DataSet', click: () => {
                         showAddDatasetDialog(0,"file1",true,false);
                     }
                 },
             ]
         },
-        /*
+        
         {
             label: "Edit",
             submenu: [
-                { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-                { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-                { type: "separator" },
-                { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-                { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-                { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-                { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+                {
+                    id: "change-dataset-name",
+                    label: 'Change Dataset Name', click: () => {
+                        shownameChangeWindow();
+                    }
+                }
             ]
         },
-        */
+        
     ]
     if (process.platform === 'darwin') {
         template.unshift({
@@ -977,6 +993,8 @@ function createMenu() {
       })
     }
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+    Menu.getApplicationMenu().getMenuItemById('change-dataset-name').enabled = false;
+    Menu.getApplicationMenu().getMenuItemById('add-dataset').enabled = false;
 }
 //ipcMain.on('convert-old-file', (event, args) => {
 function checkOldFileFormat(filepath,default_function,cancel_function){
