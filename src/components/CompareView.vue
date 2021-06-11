@@ -113,6 +113,9 @@ export default {
             deep: true //いらないと思うが
         },
     },
+    
+    destroyed: function(){
+    },
     mounted() {
         this.loadCompareData();
     },

@@ -19,7 +19,7 @@ var fastqList = [];//{file1:Fastq へのパス, file2:Fastq へのパス}のリ�
 var scoringFunctionArr = [];
 var defaultFilePath_debug = null;
 var nameChangeWindow = null;
-
+var appMode="home";
 
 //上昇傾向をとるためのスコア関数の設定
 scoringFunctionArr.push(
@@ -172,6 +172,7 @@ app.on('ready', () => {
 
     createMenu();
     ipcMain.on('mode-changed',(event,args)=>{
+        appMode = args[0];
         if(args[0]=="home"){
             Menu.getApplicationMenu().getMenuItemById('change-dataset-name').enabled = false;
             Menu.getApplicationMenu().getMenuItemById('add-dataset').enabled = false;
@@ -217,12 +218,11 @@ app.on('ready', () => {
         window.webContents.send('preferencesChanged', appPreferences.get());
     });
 
-    //dataset を変更する。テストでの使用以外は想定していない。
-    ipcMain.on('change-dataset-debug',(event,args) => {
+    //dataset を変更する。
+    ipcMain.on('change-dataset',(event,args) => {
         window.webContents.send('changeDataset',args);
     });
 
-    
     ipcMain.on('load-datasets', (event, args) => {
         sendDataSetList();
     });
@@ -851,9 +851,12 @@ function shownameChangeWindow(){
         </script>
         `;
         nameChangeWindow.loadURL('data:text/html;charset=utf-8,<html><head>'+jscode+'</head><body onload="init()" style="padding-left:2%;">\n<div>'+names.join('')+'</div><p><input type="button" value="Close" onclick="closeWindow()"></p></body></html>');
-
-        nameChangeWindow.openDevTools();
+        
+        //nameChangeWindow.openDevTools();
         nameChangeWindow.show();
+        nameChangeWindow.on('closed',()=>{
+            window.webContents.send('showDummyView',{});
+        });
     });
    
 }

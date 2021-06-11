@@ -149,7 +149,6 @@
         },
         deep: true,
       },
-      
     },
     methods: {
       updateVennDiagram: function() {

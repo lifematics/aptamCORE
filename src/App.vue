@@ -9,6 +9,7 @@
                 <div class="content">
                     <config-view ref="configComponent" v-if="mode == 'config'" :config="config" :hasLicense="hasLicense" :presets="presets" v-on:configChanged="configChanged"></config-view>
                     <info-view v-if="mode == 'info'" :config="config" :info="info" ></info-view>
+                    <dummy-view v-if="mode == 'dummy'"></dummy-view>
                     <multipane layout="horizontal" v-if="mode == 'cluster'">
                         <div :style="{ maxHeight: '600px', overflow: 'scroll' }">
                             <cluster-list ref="clusterListComponent" :config="config" :clusterSubFrame:="clusterSubFrame" v-on:loadCompareOne="loadCompareOne" :preferences="preferences" :totalCount="seqCountOfDataSet" :clusterList="clusterList" :selected="activeCluster" :dataSetId="activeDataSet" v-on:clusterChanged="clusterChanged" v-on:changeClusterSubFrame="changeClusterSubFrame"  :clusterSearchConditions="clusterSearchConditions" :page="pageOfClusters" :sequencesThreshold="sequencesThreshold" :clusterThreshold="clusterThreshold" v-on:nextPage="nextClusterPage" v-on:prevPage="prevClusterPage" v-on:searchClusterThreshold="searchClusterThreshold"/>
@@ -70,6 +71,7 @@
     import CompareView from './components/CompareView.vue';
     import CompareOneView from './components/CompareOneView.vue';
     import VennView from './components/VennView.vue';
+    import DummyView from './components/DummyView.vue';
     const { ipcRenderer } = window.require('electron');
 
     import Loading from 'vue-loading-overlay';
@@ -89,6 +91,7 @@
             CompareView,
             CompareOneView,
             VennView,
+            DummyView,
             Loading,
             Multipane,
             MultipaneResizer,
@@ -150,10 +153,9 @@
                 }
             },
             mode:{
-
                 handler:function(){
                     ipcRenderer.send('mode-changed',[this.mode]);
-                    if(!(this.mode == "compare" || this.mode == "venn"|| this.mode == "home")){
+                    if(!(this.mode == "compare" || this.mode == "venn" || this.mode == "home" || this.mode == "dummy")){
                         if(this.activeDataSet !== null ){
                             this.getClusterList();
                             this.getDatasetInfo();
@@ -167,15 +169,23 @@
             }
         },
         created() {
+            
+            ipcRenderer.on('showDummyView', () => {
+                this.mode = 'dummy';
+            });
+
             ipcRenderer.on('preferencesChanged', (event, preferences) => {
                 this.preferences = preferences;
             });
+
             ipcRenderer.on('presetsChanged', (event, presets) => {
                 this.presets = presets;
             });
+            
             ipcRenderer.on('setLoading', (event, arg) => {
                 this.isLoading = arg;
             });
+
             ipcRenderer.on('analysisChanged', (event, config) => {
                 this.config = config;
                 if (!config) {
@@ -200,6 +210,7 @@
                     this.getDataSetList();
                 }
             });
+
             ipcRenderer.on('dataSetListChanged', (event, datasets) => {
                 this.isLoading = false;
                 this.dataSetList = datasets;
@@ -212,7 +223,14 @@
             });
             
             ipcRenderer.on('changeDataset', (event, args) => {
-                this.dataSetChanged(args["id"]);
+                if(args["id"] === null){
+                    this.dataSetChanged(this.activeDataSet.toString());
+                    if(this.mode == "compare"){
+                        this.updateCompareData();
+                    }
+                }else{
+                    this.dataSetChanged(args["id"]);
+                }
             });
 
             ipcRenderer.on('clusterListChanged', (event, result) => {
@@ -226,6 +244,7 @@
                 let total = Math.floor((result['cluster_count'] + listSize - 1) / listSize);
                 this.pageOfClusters = {'total': total, 'current': page, 'from': from, 'to': to };
             });
+
             ipcRenderer.on('sequenceListChanged', (event, result) => {
                 this.isLoading = false;
                 this.seqCountOfCluster = result['sequence_count'];
@@ -237,6 +256,7 @@
                 let total = Math.floor((result['variant_count'] + listSize - 1) / listSize);
                 this.pageOfSequences = { 'total': total, 'current': page, 'from': from, 'to': to };
             });
+
             ipcRenderer.on('allSequenceListChanged', (event, result) => {
                 this.isLoading = false;
                 this.allSequenceCount = result['sequence_count'];
@@ -248,6 +268,7 @@
                 let total = Math.floor((result['variant_count'] + listSize - 1) / listSize);
                 this.pageOfAllSequences = { 'total': total, 'current': page, 'from': from, 'to': to }
             });
+
             ipcRenderer.on('dataSetInfoChanged', (event, result) => {
                 let that = this;
                 that.isLoading = false;
@@ -268,30 +289,38 @@
                     }
                 }
             });
+
             ipcRenderer.on('start-analysis', () => {
                 if (this.mode != 'config') {
                     return;
                 }
                 this.isLoading = true;
             });
+
             ipcRenderer.on('finish-analysis', () => {
                 this.isLoading = false;
                 this.mode = 'cluster';
             });
+
             ipcRenderer.on('start-export', () => {
                 this.isLoading = true;
             });
+
             ipcRenderer.on('finish-export', () => {
                 this.isLoading = false;
             });
+
             ipcRenderer.on('showSettingsDialog', () => {
             });
+
             ipcRenderer.on('hasLicense', (e,args) => {
                 this.hasLicense = args[0];
             });
+
             ipcRenderer.on('set-search-cluster-threshold', (e,arg) => {
                 this.searchClusterThreshold(arg['conditions'],arg['threshold']);
             });
+
             ipcRenderer.on('set-compare-data', (event, args) => {
                 this.compareDataSets = args['dataSets'];
                 this.compareDataList = args['data'];
@@ -303,6 +332,7 @@
                 this.pageOfCompares = { 'total': total, 'current': page, 'from': from, 'to': to };
                 this.isLoading = false;
             });
+
             ipcRenderer.on('update-compare-one-view',(event, args) => {
                 if((this.clusterSubFrame == "compare" && this.mode == "cluster")
                 || (this.mode == "sequence")){
@@ -523,6 +553,9 @@
             },
             venn: function() {
                 this.mode = 'venn';
+            },
+            dummyview:function(){
+                this.mode= 'dummy';
             },
             updatePage: function(target) {
                 switch (target) {
