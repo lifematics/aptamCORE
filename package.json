@@ -27,7 +27,7 @@
     "electron-store": "^5.1.1",
     "handlebars": "^4.7.7",
     "jquery": "^3.4.1",
-    "log4js": "^6.1.2",
+    "log4js": "^6.4.0",
     "mailgun-js": "^0.22.0",
     "peer": "^0.3.2",
     "serialize-javascript": "^3.0.0",
