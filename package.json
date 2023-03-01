@@ -29,7 +29,7 @@
     "jquery": "^3.4.1",
     "log4js": "^6.4.0",
     "mailgun-js": "^0.22.0",
-    "peer": "^0.3.2",
+    "peer": "^0.6.1",
     "serialize-javascript": "^3.0.0",
     "splitpanes": "^2.2.1",
     "sqlite3": "^4.2.0",
